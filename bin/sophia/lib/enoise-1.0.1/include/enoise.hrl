@@ -1,3 +1,0 @@
--define(MAX_NONCE, 16#FFFFFFFFFFFFFFFF).
--define(MAX_AD_LEN, 16).
-

@@ -1,50 +1,143 @@
-include mk/header.mk
-IPFS_BIN_$(d) := $(call go-curr-pkg-tgt)
+TGT_BIN :=
+CLEAN :=
+COVERAGE :=
+DISTCLEAN :=
+TEST :=
+TEST_SHORT :=
+GOCC ?= go
+PROTOC ?= protoc
 
-TGT_BIN += $(IPFS_BIN_$(d))
-TEST_GO_BUILD += $(d)-try-build
-CLEAN += $(IPFS_BIN_$(d))
+all: help    # all has to be first defined target
+.PHONY: all
 
-PATH := $(realpath $(d)):$(PATH)
+include mk/git.mk # has to be before tarball.mk
+include mk/tarball.mk
+include mk/util.mk
+include mk/golang.mk
 
-# disabled for now
-# depend on *.pb.go files in the repo as Order Only (as they shouldn't be rebuilt if exist)
-# DPES_OO_$(d) := diagnostics/pb/diagnostics.pb.go exchange/bitswap/message/pb/message.pb.go
-# DEPS_OO_$(d) += merkledag/pb/merkledag.pb.go namesys/pb/namesys.pb.go
-# DEPS_OO_$(d) += pin/internal/pb/header.pb.go unixfs/pb/unixfs.pb.go
+# -------------------- #
+#   extra properties   #
+# -------------------- #
 
-$(d)_flags =-ldflags="-X "github.com/ipfs/go-ipfs".CurrentCommit=$(git-hash)"
+ifeq ($(TEST_NO_FUSE),1)
+	GOTAGS += nofuse
+endif
+export IPFS_REUSEPORT=false
 
-$(d)-try-build $(IPFS_BIN_$(d)): GOFLAGS += $(cmd/ipfs_flags)
+# -------------------- #
+#       sub-files      #
+# -------------------- #
+dir := bin
+include $(dir)/Rules.mk
 
-# uses second expansion to collect all $(DEPS_GO)
-$(IPFS_BIN_$(d)): $(d) $$(DEPS_GO) ALWAYS #| $(DEPS_OO_$(d))
-	$(go-build-relative)
+# tests need access to rules from plugin
+dir := plugin
+include $(dir)/Rules.mk
 
-TRY_BUILD_$(d)=$(addprefix $(d)-try-build-,$(SUPPORTED_PLATFORMS))
-$(d)-try-build: $(TRY_BUILD_$(d))
-.PHONY: $(d)-try-build
+dir := test
+include $(dir)/Rules.mk
 
-$(TRY_BUILD_$(d)): PLATFORM = $(subst -, ,$(patsubst $<-try-build-%,%,$@))
-$(TRY_BUILD_$(d)): GOOS = $(word 1,$(PLATFORM))
-$(TRY_BUILD_$(d)): GOARCH = $(word 2,$(PLATFORM))
-$(TRY_BUILD_$(d)): $(d) $$(DEPS_GO) ALWAYS
-	GOOS=$(GOOS) GOARCH=$(GOARCH) $(go-try-build)
-.PHONY: $(TRY_BUILD_$(d))
+dir := cmd/ipfs
+include $(dir)/Rules.mk
 
-$(d)-install: GOFLAGS += $(cmd/ipfs_flags)
-$(d)-install: $(d) $$(DEPS_GO) ALWAYS 
-	$(GOCC) install $(go-flags-with-tags) ./cmd/ipfs
-.PHONY: $(d)-install
+# include this file only if coverage target is executed
+# it is quite expensive
+ifneq ($(filter coverage% clean distclean test/unit/gotest.junit.xml,$(MAKECMDGOALS)),)
+	# has to be after cmd/ipfs due to PATH
+	dir := coverage
+	include $(dir)/Rules.mk
+endif
 
-COVER_BIN_$(d) := $(d)/ipfs-test-cover
-CLEAN += $(COVER_BIN_$(d))
+# -------------------- #
+#   universal rules    #
+# -------------------- #
 
-$(COVER_BIN_$(d)): GOTAGS += testrunmain
-$(COVER_BIN_$(d)): $(d) $$(DEPS_GO) ALWAYS
-	$(eval TMP_PKGS := $(shell $(GOCC) list -f '{{range .Deps}}{{.}} {{end}}' $(go-flags-with-tags) ./cmd/ipfs | sed 's/ /\n/g' | grep ipfs/go-ipfs) $(call go-pkg-name,$<))
-	$(eval TMP_LIST := $(call join-with,$(comma),$(TMP_PKGS)))
-	@echo $(GOCC) test $@ -c -covermode atomic -coverpkg ... $(go-flags-with-tags) ./$(@D) # for info
-	@$(GOCC) test -o $@ -c -covermode atomic -coverpkg $(TMP_LIST) $(go-flags-with-tags) ./$(@D) 2>&1 | (grep -v 'warning: no packages being tested' || true)
+%.pb.go: %.proto bin/protoc-gen-gogofaster
+	$(PROTOC) --gogofaster_out=. --proto_path=.:$(GOPATH)/src:$(dir $@) $<
 
-include mk/footer.mk
+# -------------------- #
+#     core targets     #
+# -------------------- #
+
+build: $(TGT_BIN)
+.PHONY: build
+
+clean:
+	rm -rf $(CLEAN)
+.PHONY: clean
+
+coverage: $(COVERAGE)
+.PHONY: coverage
+
+distclean: clean
+	rm -rf $(DISTCLEAN)
+	git clean -ffxd
+.PHONY: distclean
+
+test: $(TEST)
+.PHONY: test
+
+test_short: $(TEST_SHORT)
+.PHONY: test_short
+
+deps:
+.PHONY: deps
+
+nofuse: GOTAGS += nofuse
+nofuse: build
+.PHONY: nofuse
+
+install: cmd/ipfs-install
+.PHONY: install
+
+install_unsupported: install
+	@echo "/=======================================================================\\"
+	@echo '|                                                                       |'
+	@echo '| `make install_unsupported` is deprecated, use `make install` instead. |'
+	@echo '|                                                                       |'
+	@echo "\\=======================================================================/"
+.PHONY: install_unsupported
+
+uninstall:
+	$(GOCC) clean -i ./cmd/ipfs
+.PHONY: uninstall
+
+supported:
+	@echo "Currently supported platforms:"
+	@for p in ${SUPPORTED_PLATFORMS}; do echo $$p; done
+.PHONY: supported
+
+help:
+	@echo 'DEPENDENCY TARGETS:'
+	@echo ''
+	@echo '  deps                 - Download dependencies using bundled gx'
+	@echo '  test_sharness_deps   - Download and build dependencies for sharness'
+	@echo ''
+	@echo 'BUILD TARGETS:'
+	@echo ''
+	@echo '  all          - print this help message'
+	@echo '  build        - Build binary at ./cmd/ipfs/ipfs'
+	@echo '  nofuse       - Build binary with no fuse support'
+	@echo '  install      - Build binary and install into $$GOPATH/bin'
+#	@echo '  dist_install - TODO: c.f. ./cmd/ipfs/dist/README.md'
+	@echo ''
+	@echo 'CLEANING TARGETS:'
+	@echo ''
+	@echo '  clean        - Remove files generated by build'
+	@echo '  distclean    - Remove files that are no part of a repository'
+	@echo '  uninstall    - Remove binary from $$GOPATH/bin'
+	@echo ''
+	@echo 'TESTING TARGETS:'
+	@echo ''
+	@echo '  test                    - Run all tests'
+	@echo '  test_short              - Run short go tests and short sharness tests'
+	@echo '  test_go_short           - Run short go tests'
+	@echo '  test_go_test            - Run all go tests'
+	@echo '  test_go_expensive       - Run all go tests and compile on all platforms'
+	@echo '  test_go_race            - Run go tests with the race detector enabled'
+	@echo '  test_go_lint            - Run the `golangci-lint` vetting tool'
+	@echo '  test_sharness_short     - Run short sharness tests'
+	@echo '  test_sharness_expensive - Run all sharness tests'
+	@echo '  coverage     - Collects coverage info from unit tests and sharness'
+	@echo
+.PHONY: help

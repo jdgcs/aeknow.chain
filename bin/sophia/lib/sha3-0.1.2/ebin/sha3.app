@@ -1,7 +1,0 @@
-{application,sha3,
-             [{description,[]},
-              {vsn,"0.1.2"},
-              {registered,[]},
-              {applications,[kernel,stdlib,hex2bin]},
-              {modules,[sha3]},
-              {env,[]}]}.
