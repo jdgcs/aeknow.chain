@@ -5,6 +5,9 @@ This is a very rough version, mainly for technical demo and for emergency.
 ## Usage
 The binary package is only for windows users: https://github.com/jdgcs/aeknow.chain/releases
 
+Click start.bat, then open http://localhost:8888/ with any browser.
+
+
 ## Compile
 1.In Linux, git clone the code and **make build** for the main binary.
 
