@@ -1,0 +1,11 @@
+{application,inet_ext,
+             [{pkg_name,"inet_ext"},
+              {description,"inet extensions library"},
+              {vsn,"0.4.0"},
+              {id,"git"},
+              {registered,[]},
+              {applications,[kernel,stdlib]},
+              {modules,[inet_ext,inet_ext_lib]},
+              {maintainers,["Benoit Chesneau","Geoffrey Hayes"]},
+              {licenses,["MIT"]},
+              {links,[{"Github","https://github.com/exthereum/inet_ext"}]}]}.

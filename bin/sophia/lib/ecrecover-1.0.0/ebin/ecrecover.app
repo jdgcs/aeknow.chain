@@ -1,0 +1,10 @@
+{application,ecrecover,
+             [{description,"ecrecover implementation"},
+              {vsn,"1.0.0"},
+              {registered,[]},
+              {applications,[kernel,stdlib,lager,enacl,ecrecoverprebuilt]},
+              {env,[]},
+              {modules,[ecrecover,ecrecover_util]},
+              {maintainers,[]},
+              {licenses,[]},
+              {links,[]}]}.

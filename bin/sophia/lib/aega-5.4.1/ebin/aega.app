@@ -1,0 +1,10 @@
+{application,aega,
+             [{description,"AE Generalized Accounts"},
+              {vsn,"5.4.1"},
+              {registered,[]},
+              {applications,[kernel,stdlib,lager,crypto,aetx,aecontract]},
+              {env,[]},
+              {modules,[aega_attach_tx,aega_call,aega_meta_tx]},
+              {maintainers,[]},
+              {licenses,[]},
+              {links,[]}]}.

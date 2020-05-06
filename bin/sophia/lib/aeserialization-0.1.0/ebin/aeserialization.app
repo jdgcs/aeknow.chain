@@ -1,0 +1,11 @@
+{application,aeserialization,
+             [{description,"Serialization of data for Aeternity"},
+              {vsn,"0.1.0"},
+              {registered,[]},
+              {applications,[kernel,stdlib,crypto,base58]},
+              {env,[]},
+              {modules,[aeser_api_encoder,aeser_chain_objects,
+                        aeser_contract_code,aeser_id,aeser_rlp,
+                        aeserialization]},
+              {licenses,[]},
+              {links,[]}]}.

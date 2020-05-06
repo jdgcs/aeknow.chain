@@ -1,0 +1,175 @@
+%% -*- erlang -*-
+
+%%%% leveled
+
+%% @doc A path under which leveled data files will be stored.
+{mapping, "leveled.data_root", "leveled.data_root", [
+  {default, "$(platform_data_dir)/leveled"},
+  {datatype, directory}
+]}.
+
+%% @doc Strategy for flushing data to disk
+%% Can be set to riak_sync, sync (if OTP > 16) or none.  Use none, and the OS
+%% will flush when most efficient.  Use riak_sync or sync to flush after every
+%% PUT (not recommended wihtout some hardware support e.g. flash drives and/or
+%% Flash-backed Write Caches) 
+{mapping, "leveled.sync_strategy", "leveled.sync_strategy", [
+  {default, none},
+  {datatype, atom}
+]}.
+
+
+%% @doc The key size of the Bookie's in-memory cache 
+{mapping, "leveled.cache_size", "leveled.cache_size", [
+  {default, 2500},
+  {datatype, integer},
+  hidden
+]}.
+
+%% @doc The key size of the Penciller's in-memory cache
+{mapping, "leveled.penciller_cache_size", "leveled.penciller_cache_size", [
+  {default, 28000},
+  {datatype, integer},
+  hidden
+]}.
+
+%% @doc Compression method
+%% Can be lz4 or native (which will use the Erlang native zlib compression)
+%% within term_to_binary
+{mapping, "leveled.compression_method", "leveled.compression_method", [
+  {default, native},
+  {datatype, atom}
+]}.
+
+
+%% @doc Compression point
+%% The point at which compression is applied to the Journal (the Ledger is 
+%% always compressed).  Use on_receipt or on_compact.  on_compact is suitable
+%% when values are unlikely to yield much benefit from compression 
+%% (compression is only attempted when compacting)
+{mapping, "leveled.compression_point", "leveled.compression_point", [
+  {default, on_receipt},
+  {datatype, atom}
+]}.
+
+%% @doc Log level
+%% Can be debug, info, warn, error or critical
+%% Set the minimum log level to be used within leveled.  Leveled will log many
+%% lines to allow for stats to be etracted by those using log indexers such as
+%% Splunk
+{mapping, "leveled.log_level", "leveled.log_level", [
+  {default, info},
+  {datatype, atom}
+]}.
+
+%% @doc The approximate size (in bytes) when a Journal file should be rolled.
+%% Normally keep this as around the size of o(100K) objects.  Default is 1GB.
+%% Note that on startup an actual maximum size will be chosen which varies by
+%% a random factor from this point - to avoid coordination of roll events
+%% across vnodes.
+{mapping, "leveled.journal_size", "leveled.journal_size", [
+  {default, 1000000000},
+  {datatype, integer}
+]}.
+
+%% @doc The approximate count of objects when a Journal file should be rolled.
+%% This time measured in object count, a file will be rolled if either the
+%% object count or the journal size limit is reached.  Default 200K.
+%% Note that on startup an actual maximum size will be chosen which varies by
+%% a random factor from this point - to avoid coordination of roll events
+%% across vnodes.
+{mapping, "leveled.journal_objectcount", "leveled.journal_objectcount", [
+  {default, 200000},
+  {datatype, integer}
+]}.
+
+%% @doc The level of the ledger to be pre-loaded into the page cache
+%% Depending on how much memory is available for the page cache, and how much
+%% disk I/O activity can be tolerated at startup - then the level at which the
+%% ledger is forced into the page cache can be controlled by configuration.
+{mapping, "leveled.ledger_pagecachelevel", "leveled.ledger_pagecachelevel", [
+  {default, 4},
+  {datatype, integer}
+]}.
+
+%% @doc The number of journal compactions per vnode per day
+%% The higher the value, the more compaction runs, and the sooner space is 
+%% recovered.  But each run has a cost
+{mapping, "leveled.compaction_runs_perday", "leveled.compaction_runs_perday", [
+  {default, 24},
+  {datatype, integer}
+]}.
+
+%% @doc Compaction Low Hour
+%% The hour of the day in which journal compaction can start.  Use Low hour 
+%% of 0 and High hour of 23 to have no compaction window (i.e. always compact 
+%% regardless of time of day)
+{mapping, "leveled.compaction_low_hour", "leveled.compaction_low_hour", [
+  {default, 0},
+  {datatype, integer}
+]}.
+
+%% @doc Compaction Top Hour
+%% The hour of the day, after which journal compaction should stop.
+%% If low hour > top hour then, compaction will work overnight between low
+%% hour and top hour (inclusive).  Timings rely on server's view of local time
+{mapping, "leveled.compaction_top_hour", "leveled.compaction_top_hour", [
+  {default, 23},
+  {datatype, integer}
+]}.
+
+%% @doc Max Journal Files Per Compaction Run
+%% In a single compaction run, what is the maximum number of consecutive files
+%% which may be compacted.
+{mapping, "leveled.max_run_length", "leveled.max_run_length", [
+  {default, 4},
+  {datatype, integer}
+]}.
+
+%% @doc Target Percentage for Max Run
+%% What is the target score for a maximum run of files, to qualify for 
+%% compaction.  If less than this percentage would be retained after compaction
+%% then it is a candidate (e.g. in default case if 25% of space would be
+%% recovered)
+{mapping, "leveled.maxrunlength_compactionpercentage", "leveled.maxrunlength_compactionpercentage", [
+  {default, 75.0},
+  {datatype, float},
+  hidden
+]}.
+
+%% @doc Target Percentage for Single File
+%% What is the target score for a run of a single file, to qualify for 
+%% compaction.  If less than this percentage would be retained after compaction
+%% then it is a candidate (e.g. in default case if 50% of space would be
+%% recovered)
+{mapping, "leveled.singlefile_compactionpercentage", "leveled.singlefile_compactionpercentage", [
+  {default, 50.0},
+  {datatype, float},
+  hidden
+]}.
+
+
+%% @doc Snapshot timeout (short)
+%% Maximum expected time for an index query.  A query which is taking longer
+%% than this may fail as it will be released - potentially allowing for some
+%% file processes to delete.  Timeout is in seconds.
+{mapping, "leveled.snapshot_timeout_short", "leveled.snapshot_timeout_short", [
+  {default, 1800},
+  {datatype, integer},
+  hidden
+]}.
+
+%% @doc Snapshot timeout (long)
+%% Maximum expected time for any othe rfold.  A fold which is taking longer
+%% than this may fail as it will be released - potentially allowing for some
+%% file processes to delete.  Timeout is in seconds.
+{mapping, "leveled.snapshot_timeout_long", "leveled.snapshot_timeout_long", [
+  {default, 86400},
+  {datatype, integer},
+  hidden
+]}.
+
+
+
+
+

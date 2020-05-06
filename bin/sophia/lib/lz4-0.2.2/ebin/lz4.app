@@ -1,0 +1,7 @@
+{application,lz4,
+             [{description,[]},
+              {vsn,"0.2.2"},
+              {registered,[]},
+              {applications,[kernel,stdlib]},
+              {modules,[lz4]},
+              {env,[]}]}.

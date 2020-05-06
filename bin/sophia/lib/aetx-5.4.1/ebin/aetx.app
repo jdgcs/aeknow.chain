@@ -1,0 +1,10 @@
+{application,aetx,
+             [{description,"An OTP library defining aetx behaviour"},
+              {vsn,"5.4.1"},
+              {registered,[]},
+              {applications,[kernel,stdlib]},
+              {env,[]},
+              {modules,[aetx,aetx_env,aetx_sign,aetx_utils]},
+              {maintainers,[]},
+              {licenses,[]},
+              {links,[]}]}.

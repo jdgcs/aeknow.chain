@@ -1,0 +1,1 @@
+c := "./bin/sophia/erts/bin/escript ./bin/sophia/aesophia_cli --create_calldata ./contracts/aex9.aes --call \"" + callStr + "\""

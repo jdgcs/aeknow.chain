@@ -1,0 +1,10 @@
+{application,aecuckoo,
+             [{description,"OTP application wrapping build of Cuckoo Cycle proof of work executables"},
+              {vsn,"1.0.0"},
+              {registered,[]},
+              {applications,[kernel,stdlib]},
+              {env,[]},
+              {modules,[aecuckoo]},
+              {maintainers,[]},
+              {licenses,[]},
+              {links,[]}]}.

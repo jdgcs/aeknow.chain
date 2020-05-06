@@ -1,0 +1,13 @@
+{application,rocksdb,
+             [{description,"RocksDB for Erlang"},
+              {vsn,"0.24.0"},
+              {registered,[]},
+              {applications,[kernel,stdlib]},
+              {env,[]},
+              {maintainers,["Benoit Chesneau"]},
+              {licenses,["Apache 2.0"]},
+              {links,[{"Gitlab",
+                       "https://gitlab.com/barrel-db/erlang-rocksdb"}]},
+              {files,["rebar.config","rebar.config.script","README.md",
+                      "LICENSE","src","deps","c_src","doc","test"]},
+              {modules,[rocksdb,rocksdb_bump]}]}.

@@ -1,0 +1,7 @@
+{application,base58,
+             [{description,"A simple Erlang module to perform Base58 encoding and decoding"},
+              {vsn,"0.0.1"},
+              {registered,[]},
+              {applications,[kernel,stdlib]},
+              {env,[]},
+              {modules,[base58]}]}.

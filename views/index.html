@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="icon" type="image/x-icon" />
+    <title>H5聊天室</title>
+    <style type="text/css">
+        .talk_con {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #666;
+            margin: 50px auto 0;
+            background: #f9f9f9;
+        }
+
+        .talk_show {
+            width: 100%;
+            height: 420px;
+            border: 1px solid #666;
+            background: #fff;
+            margin: 10px auto 0;
+            overflow: auto;
+        }
+
+        .talk_input {
+            width: 100%;
+        }
+
+        .talk_word {
+            width: 90%;
+            height: 26px;
+            float: left;
+            text-indent: 10px;
+            margin: 2% 5%;
+        }
+
+        .talk_sub {
+            width: 100%;
+            height: 30px;
+            float: left;
+        }
+
+        .atalk {
+            margin: 10px;
+        }
+
+        .atalk span {
+            display: inline-block;
+            background: #0181cc;
+            border-radius: 10px;
+            color: #fff;
+            padding: 5px 10px;
+        }
+
+        .btalk {
+            margin: 10px;
+            text-align: right;
+        }
+
+        .btalk span {
+            display: inline-block;
+            background: #ef8201;
+            border-radius: 10px;
+            color: #fff;
+            padding: 5px 10px;
+        }
+    </style>
+    <script src="/views/jquery.min.js"></script>
+    <script type="text/javascript">
+        $(function () {
+            // 询问框获取用户昵称
+            let username = localStorage.getItem("username") ? 
+                localStorage.getItem("username") : disp_prompt();
+            let words = $("#words");
+            let talkWords = $("#talkwords");
+            let talkSubmit = $("#talksub");
+            // webSocket
+            let wsURL = "ws://127.0.0.1:8888/websocket";
+            ws = new WebSocket(wsURL);
+            try {
+                // 监听连接服务器
+                ws.onopen = function () {
+                    console.log("已连接服务器")
+                    ws.send("{\"username\":\"hello\", \"message\":\"hello\"}")
+                };
+
+                // 监听关闭服务器
+                ws.onclose = function () {
+                    if (ws) {
+                        ws.close();
+                        ws = null
+                    }
+                    console.log("关闭服务器连接")
+                };
+
+                // 监听信息
+                ws.onmessage = function (result) {
+                    let data = JSON.parse(result.data);
+                    let className = "atalk";
+                    let user = data.username
+                    // 如果是本人,放在右边 不是本人 放在左边
+                    if (data.username === username){
+                        className = "btalk";
+                        user = "";
+                    }
+                    str = words.html() + 
+                        '<div class=" + className + ">'+user+'=><span>' 
+                        + data.message + '</span></div>';
+                    words.html(str);
+                    var scrollHeight = words.prop("scrollHeight");
+                    words.scrollTop(scrollHeight);
+                };
+
+                // 监听错误
+                ws.onerror = function () {
+                    if (ws) {
+                        ws.close();
+                        ws = null;
+                    }
+                    console.log("服务器连接失败")
+                }
+            } catch (e) {
+                console.log(e.message)
+            }
+
+            document.onkeydown = function (event) {
+                let e = event || window.event;
+                if (e && e.keyCode === 13) { //回车键的键值为13
+                    talkSubmit.click()
+                }
+            };
+
+            talkSubmit.click(function () {
+                // 获取输入框内容
+                let content = talkWords.val();
+                if (content === "") {
+                    // 消息为空时弹窗
+                    alert("消息不能为空");
+                    return;
+                }
+
+                // 发送数据
+                if (ws == null){
+                    alert("连接服务器失败,请刷新页面");
+                    window.location.reload();
+                    return
+                }
+                let request = {"username":username, "message":content};
+                ws.send(JSON.stringify(request));
+                // 清空输入框
+                talkWords.val("")
+            })
+        });
+        
+        function disp_prompt() {
+            let username = prompt("请输入昵称");
+            if (username == null || username === "") {
+                disp_prompt()
+            }else {
+                localStorage.setItem("username", username);
+                return username;
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>简易聊天室</h1>
+    <div class="talk_con">
+        <div class="talk_show" id="words">
+
+        </div>
+        <div class="talk_input">
+            <input type="text" class="talk_word" id="talkwords" placeholder="输入聊天内容">
+            <input type="button" value="发送" class="talk_sub" id="talksub">
+        </div>
+    </div>
+</body>
+</html>

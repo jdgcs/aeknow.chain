@@ -1,0 +1,12 @@
+{application,aeoracle,
+             [{description,"AE Oracle"},
+              {vsn,"5.4.1"},
+              {registered,[]},
+              {applications,[kernel,stdlib,lager,crypto,aetx,sext]},
+              {env,[]},
+              {modules,[aeo_cache,aeo_extend_tx,aeo_oracles,aeo_query,
+                        aeo_query_tx,aeo_register_tx,aeo_response_tx,
+                        aeo_state_tree,aeo_utils]},
+              {maintainers,[]},
+              {licenses,[]},
+              {links,[]}]}.

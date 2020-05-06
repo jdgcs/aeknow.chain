@@ -1,0 +1,10 @@
+{application,enacl,
+             [{description,"Erlang libsodium (NaCl) bindings"},
+              {vsn,"0.17.2"},
+              {registered,[]},
+              {applications,[kernel,stdlib]},
+              {env,[]},
+              {maintainers,["Jesper Louis Andersen"]},
+              {licenses,["MIT","ISC"]},
+              {links,[{"Github","https://github.com/jlouis/enacl"}]},
+              {modules,[enacl,enacl_ext,enacl_nif]}]}.

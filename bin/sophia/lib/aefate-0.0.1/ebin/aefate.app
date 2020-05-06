@@ -1,0 +1,13 @@
+{application,aefate,
+             [{description,"Fate: Fast aeternity transaction engine"},
+              {vsn,"0.0.1"},
+              {registered,[]},
+              {applications,[kernel,stdlib,lager,aebytecode,getopt,ecrecover,
+                             emcl]},
+              {env,[]},
+              {modules,[aefa_chain_api,aefa_engine_state,aefa_fate,
+                        aefa_fate_eval,aefa_fate_op,aefa_stores,
+                        aefa_stores_gc_bug,aefate]},
+              {maintainers,[]},
+              {licenses,[]},
+              {links,[]}]}.

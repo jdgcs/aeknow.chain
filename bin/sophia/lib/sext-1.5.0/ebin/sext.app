@@ -1,0 +1,10 @@
+{application,sext,
+             [{description,"Sortable serialization library"},
+              {vsn,"1.5.0"},
+              {modules,[sext]},
+              {registered,[]},
+              {applications,[kernel,stdlib]},
+              {env,[]},
+              {maintainers,["Ulf Wiger"]},
+              {licenses,["Apache 2.0"]},
+              {links,[{"Github","https://github.com/uwiger/sext"}]}]}.

@@ -1,0 +1,6 @@
+{
+  "PublicNode":"http://111.231.110.42:3013", 
+  "APINode":"https://www.aeknow.org",
+  "IPFSNode":"http://127.0.0.1:8080",
+  "LocalWeb":"http://127.0.0.1:8888"
+}

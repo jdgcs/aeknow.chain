@@ -1,0 +1,12 @@
+{application,enoise,
+             [{description,"An Erlang implementation of the Noise protocol"},
+              {vsn,"1.0.1"},
+              {registered,[]},
+              {applications,[kernel,stdlib,enacl]},
+              {env,[]},
+              {modules,[enoise,enoise_cipher_state,enoise_connection,
+                        enoise_crypto,enoise_hs_state,enoise_keypair,
+                        enoise_protocol,enoise_sym_state]},
+              {maintainers,["Hans Svensson"]},
+              {licenses,["ISC"]},
+              {links,[{"Github","https://github.com/aeternity/enoise"}]}]}.

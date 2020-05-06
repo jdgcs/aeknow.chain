@@ -1,0 +1,10 @@
+{application,eblake2,
+             [{description,"A pure Erlang Blake2 implementation"},
+              {vsn,"1.0.0"},
+              {registered,[]},
+              {applications,[kernel,stdlib]},
+              {env,[]},
+              {modules,[eblake2]},
+              {maintainers,["Hans Svensson"]},
+              {licenses,["ISC"]},
+              {links,[{"Github","https://github.com/aeternity/enoise"}]}]}.

@@ -1,0 +1,11 @@
+{application,aestratum_lib,
+             [{description,"Aeternity Stratum library"},
+              {vsn,"0.1.0"},
+              {registered,[]},
+              {applications,[kernel,stdlib,jsx,base58,aeminer]},
+              {env,[]},
+              {modules,[aestratum_jsonrpc,aestratum_lqueue,aestratum_miner,
+                        aestratum_nonce,aestratum_target,aestratum_utils]},
+              {maintainers,[]},
+              {licenses,[]},
+              {links,[]}]}.

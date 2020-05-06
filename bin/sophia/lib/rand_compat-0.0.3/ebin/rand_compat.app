@@ -1,0 +1,11 @@
+{application,rand_compat,
+             [{description,"Erlang 18 random compatibility library."},
+              {vsn,"0.0.3"},
+              {registered,[]},
+              {applications,[kernel,stdlib]},
+              {modules,[rand_compat]},
+              {env,[]},
+              {maintainers,["Chris Meiklejohn"]},
+              {licenses,["Apache 2.0"]},
+              {links,[{"Github",
+                       "https://github.com/lasp-lang/rand_compat"}]}]}.

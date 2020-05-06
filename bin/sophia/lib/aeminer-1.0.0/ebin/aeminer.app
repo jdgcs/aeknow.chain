@@ -1,0 +1,12 @@
+{application,aeminer,
+             [{description,"Aeternity miner"},
+              {vsn,"1.0.0"},
+              {registered,[]},
+              {applications,[kernel,stdlib,lager,enacl,aecuckoo,
+                             aecuckooprebuilt]},
+              {env,[]},
+              {modules,[aeminer_blake2b_256,aeminer_pow,aeminer_pow_cuckoo,
+                        aeminer_siphash24]},
+              {maintainers,[]},
+              {licenses,[]},
+              {links,[]}]}.
