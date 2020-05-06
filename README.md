@@ -8,6 +8,8 @@ The binary package is only for windows users: https://github.com/jdgcs/aeknow.ch
 Click start.bat, then open http://localhost:8888/ with any browser.
 
 
+For Chinese users: https://pan.baidu.com/s/1HV9tfPdxK0JpgnjZgq_l5A Open code: gvcz
+
 ## Compile
 1.In Linux, git clone the code and **make build** for the main binary.
 
