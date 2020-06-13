@@ -51,9 +51,11 @@ type CallResutSlice struct {
 }
 
 type PageDeployContract struct {
-	Options   template.HTML
-	Account   string
-	PageTitle string
+	Options      template.HTML
+	Account      string
+	PageTitle    string
+	CallContract string
+	Callfunc     string
 }
 
 var ostype = runtime.GOOS
@@ -135,10 +137,17 @@ func iDoDeployToken(ctx iris.Context) {
 
 	//callData := getCallData("init(\""+name+"\","+decimals+",\""+symbol+"\","+total_supply+")", contract_name)
 	//callStr := "init(\\\"" + name + "\\\"," + decimals + ",\\\"" + symbol + "\\\",Some(" + total_supply + "))"
-	callStr := `init("` + name + `",` + decimals + `,"` + symbol + `",Some(` + total_supply + `))`
-	//fmt.Println(callStr)
+	callStr := ""
+	if ostype == "windows" {
+		callStr = `init("` + name + `",` + decimals + `,"` + symbol + `",Some(` + total_supply + `))`
+	} else {
+		callStr = "init(\\\"" + name + "\\\"," + decimals + ",\\\"" + symbol + "\\\",Some(" + total_supply + "))"
+	}
+	fmt.Println(callStr, contract_name)
 
 	callData := getCallData(callStr, contract_name)
+	fmt.Println(callData)
+
 	vmVersion := uint16(5)
 	abiVersion := uint16(3)
 	deposit := big.NewInt(0)
@@ -180,6 +189,29 @@ func iCallContractUI(ctx iris.Context) {
 	if !checkLogin(ctx) {
 		return
 	}
+	callcontract := ""
+	callfunc := ctx.URLParam("func")
+	callcontract = ctx.URLParam("contract_id")
+	callstr := ""
+	if callfunc == "mint" {
+		callstr = "mint(" + globalAccount.Address + ",123)"
+	}
+
+	if callfunc == "allow" {
+		callstr = "create_allowance(for_account,123)"
+	}
+
+	if callfunc == "burn" {
+		callstr = "burn(123)"
+	}
+
+	if callfunc == "transfer_allowance" {
+		callstr = "transfer_allowance(ak_from,ak_to,123)"
+	}
+
+	if callfunc == "change_allowance" {
+		callstr = "transfer_allowance(for_account,123)"
+	}
 
 	ContractsLists := ""
 	contract_name := ""
@@ -202,7 +234,8 @@ func iCallContractUI(ctx iris.Context) {
 
 	var myoption template.HTML
 	myoption = template.HTML(ContractsLists)
-	myPage := PageDeployContract{Options: myoption, Account: globalAccount.Address}
+
+	myPage := PageDeployContract{Options: myoption, Account: globalAccount.Address, CallContract: callcontract, Callfunc: callstr}
 	ctx.ViewData("", myPage)
 	ctx.View("contract_call.php")
 
@@ -460,6 +493,7 @@ func getCallData(callStr, callContract string) string {
 		return callData
 	} else {
 		c := "./bin/sophia/erts/bin/escript ./bin/sophia/aesophia_cli --create_calldata ./contracts/deploy/" + callContract + " --call \"" + callStr + "\""
+		fmt.Println(c)
 		cmd := exec.Command("sh", "-c", c)
 		out, _ := cmd.Output()
 		callData := strings.Trim(strings.Replace(string(out), "Calldata:", "", 1), "\n")
@@ -521,42 +555,42 @@ func getToken(ctx iris.Context) {
 
 	//fmt.Println(myNonce)
 	//fmt.Println(thisamount)
+	/*
+	   	myurl := NodeConfig.APINode + "/api/token/" + globalAccount.Address
+	   	str := httpGet(myurl)
+	   	fmt.Println(str)
+	   	var s TokenSlice
+	   	err = json.Unmarshal([]byte(str), &s)
+	   	if err != nil {
+	   		fmt.Println(err)
+	   	}
 
-	myurl := NodeConfig.APINode + "/api/token/" + globalAccount.Address
-	str := httpGet(myurl)
-	fmt.Println(str)
-	var s TokenSlice
-	err = json.Unmarshal([]byte(str), &s)
-	if err != nil {
-		fmt.Println(err)
-	}
+	   	var i int
+	   	myNames := ""
+	   	for i = 0; i < len(s.Tokens); i++ {
+	   		//fmt.Println(s.Names[i].Aensname)
+	   		bigstr := s.Tokens[i].Balance
+	   		myBalance := ToBigFloat(bigstr)
+	   		imultiple := big.NewFloat(0.000000000000000001) //18 dec
+	   		//thisamount = new(big.Float).Mul(myBalance, imultiple).String()
+	   		thistokenamount := fmt.Sprintf("%.2f", new(big.Float).Mul(myBalance, imultiple))
 
-	var i int
-	myNames := ""
-	for i = 0; i < len(s.Tokens); i++ {
-		//fmt.Println(s.Names[i].Aensname)
-		bigstr := s.Tokens[i].Balance
-		myBalance := ToBigFloat(bigstr)
-		imultiple := big.NewFloat(0.000000000000000001) //18 dec
-		//thisamount = new(big.Float).Mul(myBalance, imultiple).String()
-		thistokenamount := fmt.Sprintf("%.2f", new(big.Float).Mul(myBalance, imultiple))
+	   		myNames = myNames + `<tr>
+	                       <td><a href=` + NodeConfig.APINode + `/token/view/` + s.Tokens[i].Tokenname + ` target=_blank>` + s.Tokens[i].Tokenname + `</a></td>
+	                       <td><a href="">` + strconv.FormatInt(s.Tokens[i].Decimal, 10) + `</a></td>
+	                       <td><a href="">` + thistokenamount + `</a></td>
+	                       <td align="center">
+	                         <div class="btn-group">
+	   						  <a href=/viewtoken?contractid=` + s.Tokens[i].Contract + `><button type="button" class="btn btn-success">Transfer</button></a> &nbsp;
 
-		myNames = myNames + `<tr>                    
-                    <td><a href=` + NodeConfig.APINode + `/token/view/` + s.Tokens[i].Tokenname + ` target=_blank>` + s.Tokens[i].Tokenname + `</a></td>  
-                    <td><a href="">` + strconv.FormatInt(s.Tokens[i].Decimal, 10) + `</a></td>    
-                    <td><a href="">` + thistokenamount + `</a></td>              
-                    <td align="center">
-                      <div class="btn-group">
-						  <a href=/viewtoken?contractid=` + s.Tokens[i].Contract + `><button type="button" class="btn btn-success">Transfer</button></a> &nbsp;
-						 
-						</div>
-                    </td>
-                  </tr>`
-	}
+	   						</div>
+	                       </td>
+	                     </tr>`
+	   	}
 
-	myAENSLists := template.HTML(myNames)
-	aensCount := len(s.Tokens)
-	myPage := PageAENS{PageId: aensCount, Account: globalAccount.Address, PageTitle: "Wallet", Balance: thisamount, Nonce: myNonce, PageContent: myAENSLists}
+	   	myAENSLists := template.HTML(myNames)
+	   	aensCount := len(s.Tokens)*/
+	myPage := PageAENS{PageId: 99, Account: globalAccount.Address, PageTitle: "Wallet", Balance: thisamount, Nonce: myNonce, PageContent: ""}
 
 	ctx.ViewData("", myPage)
 	ctx.View("tokenhome.php")

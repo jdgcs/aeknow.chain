@@ -18,6 +18,7 @@
   <!-- AdminLTE Skins. Choose a skin from the css/skins
        folder instead of downloading all of them to reduce the load. -->
  <link rel="stylesheet" href="/views/static/dist/css/skins/skin.css">
+ <link rel="dns-prefetch" href="https://www.aeknow.org">
   <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
   <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
   <!--[if lt IE 9]>
@@ -109,13 +110,8 @@
 
               <ul class="list-group list-group-unbordered">
                 <li class="list-group-item">
-                  <i class="fa fa-btc margin-r-5"></i><b>Balance:</b> <a class="pull-right"/>{{.Balance}} AE</a>
-                </li> 
-                
-                 <li class="list-group-item">
-                  <i class="glyphicon glyphicon-retweet"></i> <b>Tokens:</b> <a class="pull-right"/>{{.PageId}} </a>
-                 
-                </li>   
+                  <i class="fa fa-btc margin-r-5"></i><b>AE Balance:</b> <a class="pull-right"/>{{.Balance}} AE</a>
+                </li>
                 
                 <li class="list-group-item">
                   <i class="fa fa-calculator margin-r-5"></i><b>Nonce:</b> <a class="pull-right"/>{{.Nonce}} </a>
@@ -167,27 +163,19 @@
              <!--  <li><a href="#" data-toggle="tab">Expiring</a></li> -->
             </ul>
             <div class="tab-content1">
-            
-			<div class="tab-pane table-responsive no-padding " >
-				
-				<table class="table no-margin">
-                  <thead>
-                  <tr>
-                    <th>Token Name</th>
-                    <th>Decimal</th>  
-                    <th>Amount</th>                 
-                    <th ><center>Operation</center></th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                  {{.PageContent}}
-                  </tbody>
-                </table>
+           <div class="tab-pane table-responsive no-padding " id="tokenlist"></div>
+			</div>
 			</div>
 			
-</div>
-			</div>
 			
+<!-- jQuery 3 -->
+<script src="/views/static/bower_components/jquery/dist/jquery.min.js"></script>
+<script>
+$.get("https://www.aeknow.org/test/tokenlist/{{.Account}}/{{.Account}}",function(response){
+$("#tokenlist").html(response);
+});
+</script>
+
 
             <!-- <a href="/aens/all" class="pull-right">All AENS-></a>-->
               <!-- /.box-body -->
@@ -222,8 +210,7 @@
 </div>
 <!-- ./wrapper -->
 
-<!-- jQuery 3 -->
-<script src="/views/static/bower_components/jquery/dist/jquery.min.js"></script>
+
 <!-- Bootstrap 3.3.7 -->
 <script src="/views/static/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
 <!-- SlimScroll -->

@@ -117,7 +117,7 @@
                   <label  class="col-sm-2 control-label"><font color=red>*</font>Contract ID:</label>
 
                   <div class="col-sm-10">
-                    <input type="text" class="form-control" name="contract_id" placeholder="">
+                    <input type="text" class="form-control" name="contract_id" placeholder="" value="{{.CallContract}}">
                   </div>
                 </div>
                 
@@ -129,7 +129,7 @@
                   <label class="col-sm-2 control-label"><font color=red>*</font>Call Function:</label>
 
                   <div class="col-sm-10">
-                    <input type="text" class="form-control" name="callfunc" placeholder="">
+                    <input type="text" class="form-control" name="callfunc" placeholder="" value="{{.Callfunc}}">
                   </div>
                 </div>
                 
