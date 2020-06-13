@@ -122,7 +122,7 @@ You can setup CORS headers the same way:
 
 Shutdown
 
-To shutdown the daemon, send a SIGINT signal to it (e.g. by pressing 'Ctrl-C')
+To shut down the daemon, send a SIGINT signal to it (e.g. by pressing 'Ctrl-C')
 or send a SIGTERM signal to it (e.g. with 'kill'). It may take a while for the
 daemon to shutdown gracefully, but it can be killed forcibly by sending a
 second signal.
@@ -196,8 +196,7 @@ func defaultMux(path string) corehttp.ServeOption {
 }
 
 func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) (_err error) {
-	myenv = env
-	myreq = req
+
 	//myWeb()
 	go myiris()
 
@@ -224,7 +223,7 @@ func daemonFunc_old(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environ
 	}()
 
 	// print the ipfs version
-	//printVersion()
+	printVersion()
 
 	managefd, _ := req.Options[adjustFDLimitKwd].(bool)
 	if managefd {
@@ -361,8 +360,7 @@ func daemonFunc_old(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environ
 	}
 
 	printSwarmAddrs(node)
-	//connect default nodes in code
-	go ConnetDefaultNodes()
+
 	defer func() {
 		// We wait for the node to close first, as the node has children
 		// that it will wait for before closing, such as the API server.
@@ -415,8 +413,8 @@ func daemonFunc_old(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environ
 	if err != nil {
 		return err
 	}
-
 	go defaultSub(req, re, env)
+	go ConnetDefaultNodes()
 	// Add ipfs version info to prometheus metrics
 	var ipfsInfoMetric = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "ipfs_info",
@@ -445,7 +443,7 @@ func daemonFunc_old(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environ
 	}()
 
 	// collect long-running errors and block for shutdown
-	// TODO(cryptix): our fuse currently doesnt follow this pattern for graceful shutdown
+	// TODO(cryptix): our fuse currently doesn't follow this pattern for graceful shutdown
 	var errs error
 	for err := range merge(apiErrc, gwErrc, gcErrc) {
 		if err != nil {
@@ -484,7 +482,7 @@ func serveHTTPApi(req *cmds.Request, cctx *oldcmds.Context) (<-chan error, error
 	for _, addr := range apiAddrs {
 		apiMaddr, err := ma.NewMultiaddr(addr)
 		if err != nil {
-			return nil, fmt.Errorf("serveHTTPApi: invalid API address: %q (err: %s)", apiAddr, err)
+			return nil, fmt.Errorf("serveHTTPApi: invalid API address: %q (err: %s)", addr, err)
 		}
 		if listenerAddrs[string(apiMaddr.Bytes())] {
 			continue
@@ -500,7 +498,7 @@ func serveHTTPApi(req *cmds.Request, cctx *oldcmds.Context) (<-chan error, error
 	}
 
 	for _, listener := range listeners {
-		// we might have listened to /tcp/0 - lets see what we are listing on
+		// we might have listened to /tcp/0 - let's see what we are listing on
 		fmt.Printf("API server listening on %s\n", listener.Multiaddr())
 		// Browsers require TCP.
 		switch listener.Addr().Network() {
@@ -636,7 +634,7 @@ func serveHTTPGateway(req *cmds.Request, cctx *oldcmds.Context) (<-chan error, e
 		listeners = append(listeners, gwLis)
 	}
 
-	// we might have listened to /tcp/0 - lets see what we are listing on
+	// we might have listened to /tcp/0 - let's see what we are listing on
 	gwType := "readonly"
 	if writable {
 		gwType = "writable"

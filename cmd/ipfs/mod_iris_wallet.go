@@ -176,10 +176,10 @@ func iHomePage(ctx iris.Context) {
 	})
 	//fmt.Println("address:" + globalAccount.Address)
 	if len(globalAccount.Address) > 1 {
-		if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-			ctx.StatusCode(iris.StatusForbidden)
+		if !checkLogin(ctx) {
 			return
 		}
+
 		needReg = false
 		ak := globalAccount.Address
 
@@ -228,18 +228,20 @@ func iCheckLogin(ctx iris.Context) {
 		fmt.Println("Could not create myAccount's Account:", err)
 
 	} else {
+		// Set user as authenticated
+		session := sess.Start(ctx)
+		session.Set("authenticated", true)
+
 		globalAccount = *myAccount     //作为呈现账号
 		signAccount = myAccount        //作为签名账号
 		NodeConfig = getConfigString() //读取节点设置
 		MyIPFSConfig = getIPFSConfig() //读取IPFS节点配置
 		lastIPFS = ""
-		session := sess.Start(ctx)
+
 		initHugo() //登录成功初始化
 		// Authentication goes here
 		// ...
 
-		// Set user as authenticated
-		session.Set("authenticated", true)
 	}
 
 	ctx.Redirect("/")
@@ -247,8 +249,7 @@ func iCheckLogin(ctx iris.Context) {
 }
 
 func iMakeTranscaction(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	sender_id := ctx.FormValue("sender_id")
@@ -265,6 +266,10 @@ func iMakeTranscaction(ctx iris.Context) {
 
 	myamount := new(big.Int)
 	fmyamount.Int(myamount)
+	//transfer tokens to .chain name
+	if strings.Index(recipient_id, ".chain") > -1 {
+		recipient_id = getAccountFromAENS(recipient_id)
+	}
 
 	alice, err := account.LoadFromKeyStoreFile("data/accounts/"+sender_id, password)
 	if err != nil {
@@ -311,8 +316,7 @@ func iMakeTranscaction(ctx iris.Context) {
 }
 
 func iWallet(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	needReg := true
@@ -498,3 +502,12 @@ func readFileStr(fileName string) string {
 }
 
 //TODO: Post article hash automatically
+
+//Simple version login check for local user
+func checkLogin(ctx iris.Context) bool {
+	if len(globalAccount.Address) > 1 {
+		return true
+	}
+
+	return false
+}

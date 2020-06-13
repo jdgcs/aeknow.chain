@@ -11,11 +11,18 @@ set -o pipefail
 tar -C ../t0054-dag-car-import-export-data/ --strip-components=1 -Jxf ../t0054-dag-car-import-export-data/test_dataset_car_v0.tar.xz
 tab=$'\t'
 
+test_cmp_sorted() {
+  # use test_cmp to dump out the unsorted file contents as a diff
+  [[ "$( sort "$1" | sha256sum )" == "$( sort "$2" | sha256sum )" ]] \
+    || test_cmp "$1" "$2"
+}
+export -f test_cmp_sorted
+
 reset_blockstore() {
   node=$1
 
-  ipfsi $node pin ls --quiet --type=recursive | ipfsi $node pin rm &>/dev/null
-  ipfsi $node repo gc &>/dev/null
+  ipfsi "$node" pin ls --quiet --type=recursive | ipfsi "$node" pin rm &>/dev/null
+  ipfsi "$node" repo gc &>/dev/null
 
   test_expect_success "pinlist empty" '
     [[ -z "$( ipfsi $node pin ls )" ]]
@@ -27,15 +34,20 @@ reset_blockstore() {
 
 # hammer with concurrent gc to ensure nothing clashes
 do_import() {
-  node=$1; shift
+  node="$1"; shift
+  (
+      touch spin.gc
 
-  touch spin.gc
-  timeout -s QUIT 15 bash -c "while [[ -e spin.gc ]]; do ipfsi $node repo gc &>>gc_out; done" & gc1_pid=$!
-  timeout -s QUIT 15 bash -c "while [[ -e spin.gc ]]; do ipfsi $node repo gc &>>gc_out; done" & gc2_pid=$!
+      while [[ -e spin.gc ]]; do ipfsi "$node" repo gc &>/dev/null; done &
+      while [[ -e spin.gc ]]; do ipfsi "$node" repo gc &>/dev/null; done &
 
-  timeout -s QUIT 10 bash -c "ipfsi $node dag import $* 2>&1"
+      ipfsi "$node" dag import "$@" 2>&1 && ipfsi "$node" repo verify &>/dev/null
+      result=$?
 
-  rm -f spin.gc || true
+      rm -f spin.gc &>/dev/null
+      wait || true  # work around possible trigger of a bash bug on overloaded circleci
+      exit $result
+  )
 }
 
 run_online_imp_exp_tests() {
@@ -60,15 +72,11 @@ EOE
       ../t0054-dag-car-import-export-data/combined_naked_roots_genesis_and_128.car \
       ../t0054-dag-car-import-export-data/lotus_testnet_export_128_shuffled_nulroot.car \
       ../t0054-dag-car-import-export-data/lotus_devnet_genesis_shuffled_nulroot.car \
-    | sort > basic_import_actual
+    > basic_import_actual
   '
 
-  # FIXME - positive-test the lack of output when https://github.com/ipfs/go-ipfs/issues/7121 is addressed
-  test_expect_failure "concurrent GC did not manage to grab anything and remained silent" '
-    test_cmp /dev/null gc_out
-  '
   test_expect_success "basic import output as expected" '
-    test_cmp basic_import_expected basic_import_actual
+    test_cmp_sorted basic_import_expected basic_import_actual
   '
 
   test_expect_success "basic fetch+export 1" '
@@ -91,11 +99,11 @@ EOE
 
   test_expect_success "import/pin naked roots only, relying on local blockstore having all the data" '
     ipfsi 1 dag import --enc=json ../t0054-dag-car-import-export-data/combined_naked_roots_genesis_and_128.car \
-      | sort > naked_import_result_json_actual
+      > naked_import_result_json_actual
   '
 
   test_expect_success "naked import output as expected" '
-    test_cmp  naked_root_import_json_expected naked_import_result_json_actual
+    test_cmp_sorted naked_root_import_json_expected naked_import_result_json_actual
   '
 
   reset_blockstore 0
@@ -104,36 +112,29 @@ EOE
   mkfifo pipe_testnet
   mkfifo pipe_devnet
 
-  # test that ipfs correctly opens both pipes and deleting them doesn't interfere with cleanup
-  bash -c '
-    sleep 1
-    cat ../t0054-dag-car-import-export-data/lotus_testnet_export_128_shuffled_nulroot.car > pipe_testnet & cat1_pid=$!
-    cat ../t0054-dag-car-import-export-data/lotus_devnet_genesis_shuffled_nulroot.car > pipe_devnet & cat2_pid=$!
-
-    rm pipe_testnet pipe_devnet
-
-    # extra safety valve to kill the cat processes in case something goes wrong
-    bash -c "sleep 60; kill $cat1_pid $cat2_pid 2>/dev/null" &
-  ' &
-
   test_expect_success "fifo import" '
-    do_import 0 \
-      pipe_testnet \
-      pipe_devnet \
-      ../t0054-dag-car-import-export-data/combined_naked_roots_genesis_and_128.car \
-    | sort > basic_fifo_import_actual
+    (
+        cat ../t0054-dag-car-import-export-data/lotus_testnet_export_128_shuffled_nulroot.car > pipe_testnet &
+        cat ../t0054-dag-car-import-export-data/lotus_devnet_genesis_shuffled_nulroot.car > pipe_devnet &
+
+        do_import 0 \
+          pipe_testnet \
+          pipe_devnet \
+          ../t0054-dag-car-import-export-data/combined_naked_roots_genesis_and_128.car \
+        > basic_fifo_import_actual
+        result=$?
+
+        wait || true	# work around possible trigger of a bash bug on overloaded circleci
+        exit "$result"
+    )
   '
-  # FIXME - positive-test the lack of output when https://github.com/ipfs/go-ipfs/issues/7121 is addressed
-  test_expect_failure "concurrent GC did not manage to grab anything and remained silent" '
-    test_cmp /dev/null gc_out
+
+  test_expect_success "remove fifos" '
+    rm pipe_testnet pipe_devnet
   '
 
   test_expect_success "fifo-import output as expected" '
-    test_cmp basic_import_expected basic_fifo_import_actual
-  '
-
-  test_expect_success "fifos no longer present" '
-    ! [[ -e pipe_testnet ]] && ! [[ -e pipe_devnet ]]
+    test_cmp_sorted basic_import_expected basic_fifo_import_actual
   '
 }
 
@@ -155,7 +156,7 @@ test_init_ipfs
 
 
 test_expect_success "basic offline export of 'getting started' dag works" '
-  ipfs dag export QmS4ustL54uo8FzR9455qaxZwuMiUhyvMcX9Ba8nUH4uVv >/dev/null
+  ipfs dag export "$HASH_WELCOME_DOCS" >/dev/null
 '
 
 
@@ -164,7 +165,7 @@ test_expect_success "basic offline export of nonexistent cid" '
   ! ipfs dag export QmYwAPJXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX 2> offline_fetch_error_actual >/dev/null
 '
 test_expect_success "correct error" '
-  test_cmp offline_fetch_error_expected offline_fetch_error_actual
+  test_cmp_sorted offline_fetch_error_expected offline_fetch_error_actual
 '
 
 
@@ -174,10 +175,10 @@ cat >multiroot_import_json_expected <<EOE
 {"Root":{"Cid":{"/":"bafy2bzacede2hsme6hparlbr4g2x6pylj43olp4uihwjq3plqdjyrdhrv7cp4"},"PinErrorMsg":""}}
 EOE
 test_expect_success "multiroot import works" '
-  ipfs dag import --enc=json ../t0054-dag-car-import-export-data/lotus_testnet_export_256_multiroot.car | sort > multiroot_import_json_actual
+  ipfs dag import --enc=json ../t0054-dag-car-import-export-data/lotus_testnet_export_256_multiroot.car > multiroot_import_json_actual
 '
 test_expect_success "multiroot import expected output" '
-  test_cmp multiroot_import_json_expected multiroot_import_json_actual
+  test_cmp_sorted multiroot_import_json_expected multiroot_import_json_actual
 '
 
 
@@ -194,10 +195,10 @@ test_expect_success "expected silence on --pin-roots=false" '
 
 test_expect_success "naked root import works" '
   ipfs dag import --enc=json ../t0054-dag-car-import-export-data/combined_naked_roots_genesis_and_128.car \
-  | sort > naked_root_import_json_actual
+    > naked_root_import_json_actual
 '
 test_expect_success "naked root import expected output" '
-   test_cmp naked_root_import_json_expected naked_root_import_json_actual
+   test_cmp_sorted naked_root_import_json_expected naked_root_import_json_actual
 '
 
 test_done

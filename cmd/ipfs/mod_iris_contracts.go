@@ -60,8 +60,7 @@ var ostype = runtime.GOOS
 
 //decode the cb_strings
 func iDoDecodeContractCall(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	contract_name := ctx.FormValue("contract_name")
@@ -83,8 +82,7 @@ func iDoDecodeContractCall(ctx iris.Context) {
 }
 
 func iDecodeContractCall(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	contract_name := ""
@@ -111,8 +109,7 @@ func iDecodeContractCall(ctx iris.Context) {
 
 //deploy AEX-9 token UI
 func iDeployTokenUI(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 
@@ -180,8 +177,7 @@ func iDoDeployToken(ctx iris.Context) {
 }
 
 func iCallContractUI(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 
@@ -213,8 +209,7 @@ func iCallContractUI(ctx iris.Context) {
 }
 
 func iDoCallContract(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 
@@ -249,6 +244,7 @@ func iDoCallContract(ctx iris.Context) {
 		ctx.ViewData("", myPage)
 		ctx.View("transaction.php")
 	} else {
+
 		//TODO:return call result
 		call_result_url := NodeConfig.PublicNode + "/v2/transactions/" + myTxhash + "/info"
 		fmt.Println(call_result_url)
@@ -276,8 +272,7 @@ func iDoCallContract(ctx iris.Context) {
 
 //deploy any contracts UI
 func iDeployContractUI(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	ContractsLists := ""
@@ -308,8 +303,7 @@ func iDeployContractUI(ctx iris.Context) {
 //deploy any contracts
 func iDoDeployContract(ctx iris.Context) {
 	// NewContractCreateTx(ownerID string, bytecode string, vmVersion, abiVersion uint16, deposit, amount, gasLimit, gasPrice *big.Int, callData string, ttlnoncer TTLNoncer) (tx *ContractCreateTx, err error)
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 
@@ -360,8 +354,7 @@ func iDoDeployContract(ctx iris.Context) {
 
 //build transfering token transaction and post it
 func iTokenTransfer(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 
@@ -505,8 +498,7 @@ func getByteCode(callContract string) string {
 
 //Token main page
 func getToken(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	node := naet.NewNode(NodeConfig.PublicNode, false)
@@ -532,6 +524,7 @@ func getToken(ctx iris.Context) {
 
 	myurl := NodeConfig.APINode + "/api/token/" + globalAccount.Address
 	str := httpGet(myurl)
+	fmt.Println(str)
 	var s TokenSlice
 	err = json.Unmarshal([]byte(str), &s)
 	if err != nil {
@@ -572,8 +565,7 @@ func getToken(ctx iris.Context) {
 
 //Token management page
 func iToken(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 
@@ -655,8 +647,7 @@ func iToken(ctx iris.Context) {
 }
 
 func iContractsHome(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	myPage := PageWallet{Account: globalAccount.Address}

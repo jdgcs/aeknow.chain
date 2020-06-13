@@ -221,6 +221,9 @@ type broadcastWaitTransactionNodeCapabilities interface {
 // SignBroadcastTransaction and WaitForTransactionForXBlocks.
 func SignBroadcastWaitTransaction(tx transactions.Transaction, signingAccount *account.Account, n broadcastWaitTransactionNodeCapabilities, networkID string, x uint64) (signedTxStr, hash, signature string, blockHeight uint64, blockHash string, err error) {
 	signedTxStr, hash, signature, err = SignBroadcastTransaction(tx, signingAccount, n, networkID)
+	fmt.Println(signedTxStr)
+	fmt.Println(hash)
+
 	if err != nil {
 		return
 	}

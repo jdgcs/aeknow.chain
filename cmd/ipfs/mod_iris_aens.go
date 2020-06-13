@@ -35,8 +35,7 @@ type PageUpdateAENS struct {
 }
 
 func iExpertDoUpdateAENS(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	myPointerJson := ctx.FormValue("pointerjson")
@@ -80,8 +79,7 @@ func iExpertDoUpdateAENS(ctx iris.Context) {
 }
 
 func iDoUpdateAENS(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	aensname := ctx.FormValue("aensname")
@@ -241,8 +239,7 @@ func iUpdateAENS(ctx iris.Context) {
 }
 
 func iDoTransferAENS(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	aensname := ctx.FormValue("aensname")
@@ -271,8 +268,7 @@ func iDoTransferAENS(ctx iris.Context) {
 }
 
 func iTransferAENS(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	aensname := ctx.URLParam("aensname")
@@ -282,8 +278,7 @@ func iTransferAENS(ctx iris.Context) {
 }
 
 func iDoBidAENS(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	aensname := ctx.FormValue("aensname")
@@ -321,8 +316,7 @@ func iDoBidAENS(ctx iris.Context) {
 	ctx.View("transaction.php")
 }
 func iDoRegAENS(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	aensname := ctx.FormValue("aensname")
@@ -377,8 +371,7 @@ func iDoRegAENS(ctx iris.Context) {
 }
 
 func iQueryAENS(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	aensname := ctx.FormValue("aensname")
@@ -445,8 +438,7 @@ func iQueryAENS(ctx iris.Context) {
 }
 
 func getAENSBidding(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	ak := globalAccount.Address
@@ -524,8 +516,7 @@ func getAENSBidding(ctx iris.Context) {
 }
 
 func getAENS(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	node := naet.NewNode(NodeConfig.PublicNode, false)
@@ -585,4 +576,36 @@ func getAENS(ctx iris.Context) {
 
 	ctx.ViewData("", myPage)
 	ctx.View("aens.php")
+}
+
+//get account address from aens name
+func getAccountFromAENS(aensname string) string {
+	myurl := NodeConfig.PublicNode + "/v2/names/" + aensname
+	str := httpGet(myurl)
+	//fmt.Println(myurl)
+
+	var s AENSInfo
+	err := json.Unmarshal([]byte(str), &s)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	var myPagedata PageUpdateAENS
+
+	myPagedata.NameID = s.ID
+	myPagedata.NameTTL = s.TTL
+	myPagedata.NameJson = template.HTML(str)
+	myPagedata.AENSName = aensname
+	myPagedata.Account = globalAccount.Address
+
+	myPointers := s.Pointers
+
+	var i int
+
+	for i = 0; i < len(myPointers); i++ {
+		if myPointers[i].Key == "account_pubkey" {
+			return myPointers[i].ID
+		}
+	}
+	return "NULL"
 }

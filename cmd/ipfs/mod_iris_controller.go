@@ -45,6 +45,7 @@ func myiris() {
 	app.Get("/buildblog", iBuildSite)
 	app.Get("/editpage", iEditBlog)
 	app.Get("/delpage", iDelBlog)
+	app.Get("/setsite", iSetSite)
 
 	app.Get("/goaens", iGoAENS)
 
@@ -177,5 +178,5 @@ func myiris() {
 
 	})
 
-	app.Run(iris.Addr(":8888"))
+	app.Run(iris.Addr("localhost:8888"))
 }

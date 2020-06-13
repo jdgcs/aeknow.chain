@@ -69,21 +69,29 @@ func getIPFSConfig() IPFSConfig {
 
 }
 
-//show the defult homepage
-func iHaeme(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+//change the site settings, such as theme, name and description
+func iSetSite(ctx iris.Context) {
+	if !checkLogin(ctx) {
 		return
 	}
-	fmt.Println("Haeme")
+	myPage := PageWallet{Account: globalAccount.Address, PageTitle: "Setting"}
+	ctx.ViewData("", myPage)
+	ctx.View("haeme_settings.php")
+}
+
+//show the defult homepage
+func iHaeme(ctx iris.Context) {
+	if !checkLogin(ctx) {
+		return
+	}
+	//fmt.Println("Haeme")
 	myPage := PageWallet{PageId: 23, Account: globalAccount.Address, PageTitle: "Haeme"}
 	ctx.ViewData("", myPage)
 	ctx.View("transaction.php")
 }
 
 func iBlog(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	fmt.Println("Haeme")
@@ -95,8 +103,7 @@ func iBlog(ctx iris.Context) {
 
 func iSaveBlog(ctx iris.Context) {
 
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 
@@ -188,8 +195,7 @@ tags: ` + tagstr + `
 }
 
 func iNewBlog(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	myPage := PageBlog{Account: globalAccount.Address, PageTitle: "", PageContent: "", PageTags: "", PageCategories: "", EditPath: ""}
@@ -199,8 +205,7 @@ func iNewBlog(ctx iris.Context) {
 }
 
 func iDelBlog(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	pageaddress := ctx.URLParam("pageaddress")
@@ -218,8 +223,7 @@ func iDelBlog(ctx iris.Context) {
 }
 
 func iEditBlog(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	pageaddress := ctx.URLParam("pageaddress")
@@ -300,6 +304,9 @@ func iEditBlog(ctx iris.Context) {
 }
 
 func iBlogUploadFile(ctx iris.Context) {
+	if !checkLogin(ctx) {
+		return
+	}
 	//filename := ctx.FormValue("filename")
 	//fmt.Println("\n\nfile:" + filename + "\n\n")
 	file, info, err := ctx.FormFile("editormd-image-file")
@@ -372,6 +379,9 @@ func iBlogUploadFile(ctx iris.Context) {
 	}
 }
 func iBuildSite(ctx iris.Context) {
+	if !checkLogin(ctx) {
+		return
+	}
 	if ostype == "windows" {
 		fileExec := "..\\..\\..\\bin\\hugo.exe"
 		c := fileExec + " --theme=aeknow"
@@ -450,8 +460,7 @@ func iBuildSite(ctx iris.Context) {
 	//TODO:Different users' site and Windows
 }
 func iUpdateStatic(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 
@@ -483,8 +492,7 @@ func iUpdateStatic(ctx iris.Context) {
 }
 
 func iGoAENS(ctx iris.Context) {
-	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		ctx.StatusCode(iris.StatusForbidden)
+	if !checkLogin(ctx) {
 		return
 	}
 	aensname := ctx.URLParam("aensname")
