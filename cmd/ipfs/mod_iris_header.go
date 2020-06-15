@@ -64,15 +64,6 @@ type PageLogin struct {
 	Lang    langFile
 }
 
-type PageWallet struct {
-	PageId      int
-	PageContent template.HTML
-	PageTitle   string
-	Account     string
-	Balance     string
-	Nonce       uint64
-}
-
 type AeknowConfig struct {
 	PublicNode string
 	APINode    string

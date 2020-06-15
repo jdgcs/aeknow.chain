@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -131,6 +132,8 @@ func iDoDeployToken(ctx iris.Context) {
 	total_supply := ctx.FormValue("total_supply")
 	contract_name := ctx.FormValue("contract_name")
 
+	PayloadStr := name + "#" + symbol + "#" + decimals + "#" + total_supply
+
 	decimals_int, _ := strconv.Atoi(decimals)
 	decimals_long := "000000000000000000000000000000"
 	total_supply = total_supply + decimals_long[1:decimals_int]
@@ -179,9 +182,27 @@ func iDoDeployToken(ctx iris.Context) {
 		ak := globalAccount.Address
 		//TODO:get contract id and redirect to another submit token to browser page
 		//contract_id := getContractIDFromHash(myTxhash)
-		myPage := PageWallet{PageId: 23, Account: ak, PageTitle: myTxhash}
+
+		call_result_url := NodeConfig.PublicNode + "/v2/transactions/" + myTxhash + "/info"
+		fmt.Println(call_result_url)
+		txinfo := httpGet(call_result_url)
+		//fmt.Println(txinfo)
+		var s CallResutSlice
+		err = json.Unmarshal([]byte(txinfo), &s)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		PayloadStr = PayloadStr + "#" + s.Call_info.Contract_id
+		input := []byte(PayloadStr)
+
+		encodeString := base64.StdEncoding.EncodeToString(input)
+		PublishLink := "wallet?amount=1&recipient_id=ak_fCCw1JEkvXdztZxk8FRGNAkvmArhVeow89e64yX4AxbCPrVh5&payload=" + encodeString
+		fmt.Println(PublishLink)
+
+		myPage := PageWallet{PageId: 23, Account: ak, Recipient_id: symbol, PageTitle: myTxhash, PageContent: template.HTML(PublishLink)}
 		ctx.ViewData("", myPage)
-		ctx.View("transaction.php")
+		ctx.View("token_deploy.php")
 	}
 }
 

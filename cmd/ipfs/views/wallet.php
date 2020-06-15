@@ -154,7 +154,7 @@
                   <label for="inputEmail3" class="col-sm-2 control-label"><font color=red>*</font>Recipient Address</label>
 
                   <div class="col-sm-10">
-                    <input type="text" class="form-control" name="recipient_id" placeholder="address as ak_**** or AENS name as liuyang.chain">
+                    <input type="text" class="form-control" name="recipient_id" placeholder="address as ak_**** or AENS name as liuyang.chain" value="{{.Recipient_id}}">
                   </div>
                 </div>
                 
@@ -162,7 +162,7 @@
                   <label for="inputEmail3" class="col-sm-2 control-label"><font color=red>*</font>Amount</label>
                   <div class="col-sm-10">
 					  <div class="input-group">
-                    <input type="text" class="form-control" name="amount" placeholder="such as 7.89"> 
+                    <input type="text" class="form-control" name="amount" placeholder="such as 7.89" value="{{.Amount}}"> 
                     <span class="input-group-addon">
                       AE
                      </span>
@@ -185,7 +185,7 @@
                   <div class="col-sm-10">
                     <div class="input-group">
                         
-                    <textarea type="text" class="form-control" name="payload"></textarea>
+                    <textarea type="text" class="form-control" name="payload">{{.Payload}}</textarea>
                     <span class="input-group-addon">
                           Encrypt &nbsp;<input type="checkbox" name="isencrypt" disabled="disabled" >
                      </span>

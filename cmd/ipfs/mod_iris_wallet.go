@@ -3,6 +3,7 @@ package main
 import (
 	//"encoding/json"
 	crypto_rand "crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"html/template"
@@ -31,6 +32,18 @@ var (
 	cookieNameForSessionID = "mycookiesessionnameid"
 	sess                   = sessions.New(sessions.Config{Cookie: cookieNameForSessionID})
 )
+
+type PageWallet struct {
+	PageId       int
+	PageContent  template.HTML
+	PageTitle    string
+	Account      string
+	Balance      string
+	Nonce        uint64
+	Recipient_id string
+	Payload      string
+	Amount       string
+}
 
 func iRegisterNew(ctx iris.Context) {
 	var myPage PageReg
@@ -322,6 +335,17 @@ func iWallet(ctx iris.Context) {
 	needReg := true
 	ak := ""
 	AccountsLists := ""
+	recipient_id := ""
+	payload := ""
+	amountstr := ""
+
+	recipient_id = ctx.URLParam("recipient_id")
+	//payloadByte = ctx.URLParam("payload")
+	payloadByte, _ := base64.StdEncoding.DecodeString(ctx.URLParam("payload"))
+	payload = string(payloadByte)
+
+	amountstr = ctx.URLParam("amount")
+
 	node := naet.NewNode(NodeConfig.PublicNode, false)
 
 	akBalance, err := node.GetAccount(globalAccount.Address)
@@ -358,7 +382,7 @@ func iWallet(ctx iris.Context) {
 		needReg = false
 		ak := globalAccount.Address
 
-		myPage := PageWallet{PageId: 23, Account: ak, PageTitle: "Wallet", Balance: thisamount, Nonce: myNonce}
+		myPage := PageWallet{PageId: 23, Account: ak, PageTitle: "Wallet", Balance: thisamount, Nonce: myNonce, Recipient_id: recipient_id, Amount: amountstr, Payload: payload}
 		ctx.ViewData("", myPage)
 		ctx.View("wallet.php")
 

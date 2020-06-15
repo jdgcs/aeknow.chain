@@ -171,7 +171,7 @@
 <!-- jQuery 3 -->
 <script src="/views/static/bower_components/jquery/dist/jquery.min.js"></script>
 <script>
-$.get("https://www.aeknow.org/test/tokenlist/{{.Account}}/{{.Account}}",function(response){
+$.get("https://www.aeknow.org/api/tokenlist/{{.Account}}/{{.Account}}",function(response){
 $("#tokenlist").html(response);
 });
 </script>
