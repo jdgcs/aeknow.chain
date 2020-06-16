@@ -159,12 +159,12 @@ var myAccount='{{.Account}}';
 
 
 if(!/^http(s*):\/\//.test(location.href)){
-alert('请部署到localhost');
+//alert('请部署到localhost');
 }	
 	
 var lockReconnect = false;	
 var socket;
-var wsUrl = 'ws://localhost:8888/websocket';
+var wsUrl = 'ws://127.0.0.1:8888/websocket';
 
 
 self.setInterval("heart()",60000);

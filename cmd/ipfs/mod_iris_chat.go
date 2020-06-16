@@ -346,7 +346,7 @@ func toTopic(req *cmds.Request, res cmds.ResponseEmitter, env cmds.Environment, 
 	discover, _ := req.Options[pubsubDiscoverOptionName].(bool)
 
 	var origin = NodeConfig.LocalWeb + "/"
-	var url = "ws://localhost:8888/websocket"
+	var url = "ws://127.0.0.1:8888/websocket"
 	ws, err := websocket.Dial(url, "", origin)
 	if err != nil {
 		//log.Fatal(err)
@@ -576,8 +576,8 @@ func defaultSub(req *cmds.Request, res cmds.ResponseEmitter, env cmds.Environmen
 	topic := "ae"
 	discover, _ := req.Options[pubsubDiscoverOptionName].(bool)
 
-	var origin = "http://localhost:8888/"
-	var url = "ws://localhost:8888/websocket"
+	var origin = "http://127.0.0.1:8888/"
+	var url = "ws://127.0.0.1:8888/websocket"
 	ws, err := websocket.Dial(url, "", origin)
 	if err != nil {
 		//log.Fatal(err)

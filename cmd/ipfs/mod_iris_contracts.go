@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	//"github.com/aeternity/aepp-sdk-go/v7/account"
+	"github.com/aeternity/aepp-sdk-go/v7/account"
 	aeconfig "github.com/aeternity/aepp-sdk-go/v7/config"
 	"github.com/aeternity/aepp-sdk-go/v7/naet"
 	"github.com/aeternity/aepp-sdk-go/v7/transactions"
@@ -132,11 +132,11 @@ func iDoDeployToken(ctx iris.Context) {
 	total_supply := ctx.FormValue("total_supply")
 	contract_name := ctx.FormValue("contract_name")
 
-	PayloadStr := name + "#" + symbol + "#" + decimals + "#" + total_supply
+	PayloadStr := "AEX9#" + name + "#" + symbol + "#" + decimals
 
 	decimals_int, _ := strconv.Atoi(decimals)
 	decimals_long := "000000000000000000000000000000"
-	total_supply = total_supply + decimals_long[1:decimals_int]
+	total_supply = total_supply + decimals_long[0:decimals_int]
 
 	//callData := getCallData("init(\""+name+"\","+decimals+",\""+symbol+"\","+total_supply+")", contract_name)
 	//callStr := "init(\\\"" + name + "\\\"," + decimals + ",\\\"" + symbol + "\\\",Some(" + total_supply + "))"
@@ -412,12 +412,12 @@ func iTokenTransfer(ctx iris.Context) {
 		return
 	}
 
-	//sender_id := ctx.FormValue("sender_id")
+	sender_id := ctx.FormValue("sender_id")
 	recipient_id := ctx.FormValue("recipient_id")
 	//transferamount := ctx.FormValue("amount")
 	amountstr := ctx.FormValue("amount")
 	contractID := ctx.FormValue("contractID")
-	//password := ctx.FormValue("password")
+	password := ctx.FormValue("password")
 
 	//convert transfer amout to bigint string
 	famount, err := strconv.ParseFloat(amountstr, 64)
@@ -446,6 +446,18 @@ func iTokenTransfer(ctx iris.Context) {
 	//callData := getCallData("meta_info()")
 
 	//NewContractCallTx(callerID string, contractID string, amount, gasLimit, gasPrice *big.Int, abiVersion uint16, callData string, ttlnoncer TTLNoncer) (tx *ContractCallTx, err error) {
+	if strings.Index(recipient_id, ".chain") > -1 {
+		recipient_id = getAccountFromAENS(recipient_id)
+	}
+
+	TokenSignAccount, err := account.LoadFromKeyStoreFile("data/accounts/"+sender_id, password)
+	if err != nil {
+		ak := globalAccount.Address
+		myPage := PageWallet{PageId: 23, Account: ak, PageTitle: "Failed:Could not Read Account"}
+		ctx.ViewData("", myPage)
+		ctx.View("transaction.php")
+
+	}
 
 	tx, err := transactions.NewContractCallTx(ownerID, contractID, amount, gasLimit, gasPrice, abiVersion, callData, ttlnoncer)
 	if err != nil {
@@ -454,7 +466,7 @@ func iTokenTransfer(ctx iris.Context) {
 		//fmt.Println(tx)
 	}
 
-	_, myTxhash, _, _, _, err := SignBroadcastWaitTransaction(tx, signAccount, node, aeconfig.Node.NetworkID, 10)
+	_, myTxhash, _, _, _, err := SignBroadcastWaitTransaction(tx, TokenSignAccount, node, aeconfig.Node.NetworkID, 10)
 	if err != nil {
 		fmt.Println("SignBroadcastTransaction failed with:", err)
 		ak := globalAccount.Address

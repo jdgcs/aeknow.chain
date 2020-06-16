@@ -178,5 +178,5 @@ func myiris() {
 
 	})
 
-	app.Run(iris.Addr("localhost:8888"))
+	app.Run(iris.Addr("127.0.0.1:8888"))
 }
