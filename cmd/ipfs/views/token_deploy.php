@@ -75,8 +75,12 @@
 	   <br/><br/>
     <a href="https://www.aeknow.org/block/transaction/{{.PageTitle}}" target="_blank">{{.PageTitle}}</a>
     <br/><br/>
-   <center><a href= {{.PageContent}}><button type="button" class="btn btn-block btn-success btn-lg">Publish the Token Information to AEKnow.org</button></a></center>
-  </div>
+   <center><a href= {{.PageContent}}><button type="button" class="btn btn-block btn-success btn-lg">Publish the Token Information to AEKnow.org With AE</button></a></center>
+  <br /> <br />
+<!--<center><a href= {{.PageContent}}><button type="button" class="btn btn-block btn-success btn-lg">Publish the Token Information to  AEKnow.org With AEG</button></a></center>-->
+
+
+</div>
   <!-- /.content-wrapper -->
  {{ template "footer" .}}
   <div class="control-sidebar-bg"></div>

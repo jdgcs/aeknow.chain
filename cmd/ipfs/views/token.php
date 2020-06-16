@@ -18,6 +18,7 @@
   <!-- AdminLTE Skins. Choose a skin from the css/skins
        folder instead of downloading all of them to reduce the load. -->
  <link rel="stylesheet" href="/views/static/dist/css/skins/skin.css">
+ <link rel="dns-prefetch" href="https://www.aeknow.org">
   <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
   <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
   <!--[if lt IE 9]>
@@ -109,11 +110,11 @@
 
               <ul class="list-group list-group-unbordered">
                 <li class="list-group-item">
-                  <i class="fa fa-btc margin-r-5"></i><b>Balance:</b> <a class="pull-right"/>{{.Balance}} AE</a>
+                  <i class="fa fa-btc margin-r-5"></i><b>Name:</b> <a class="pull-right"/><div id="tokenname"></div></a>
                 </li>   
                 
                 <li class="list-group-item">
-                  <i class="fa fa-calculator margin-r-5"></i><b>Nonce:</b> <a class="pull-right"/>{{.Nonce}} </a>
+                  <i class="fa fa-calculator margin-r-5"></i><b>Balance:</b> <a class="pull-right"/><div id="tokenbalance"></div> </a>
                  
                 </li> 
                 
@@ -154,7 +155,7 @@
                   <label for="inputEmail3" class="col-sm-2 control-label"><font color=red>*</font>Recipient Address</label>
 
                   <div class="col-sm-10">
-                    <input type="text" class="form-control" name="recipient_id" placeholder="address as ak_**** or AENS name as liuyang.chain">
+                    <input type="text" class="form-control" name="recipient_id" placeholder="address as ak_**** or AENS name as liuyang.chain" value="{{.Recipient_id}}">
                   </div>
                 </div>
                 
@@ -162,7 +163,7 @@
                   <label for="inputEmail3" class="col-sm-2 control-label"><font color=red>*</font>Amount</label>
                   <div class="col-sm-10">
 					  <div class="input-group">
-                    <input type="text" class="form-control" name="amount" placeholder="such as 7.89"> 
+                    <input type="text" class="form-control" name="amount" placeholder="such as 7.89" value="{{.Amount}}"> 
                     <span class="input-group-addon">
                       AE
                      </span>
@@ -266,6 +267,17 @@
 
 <!-- jQuery 3 -->
 <script src="/views/static/bower_components/jquery/dist/jquery.min.js"></script>
+<script type="text/javascript">
+$.get("https://www.aeknow.org/api/mytoken/{{.Account}}/{{.PageTitle}}",function(response){
+$("#tokenlist").html(response);
+var json = JSON.parse(response); // 将字符串转换为JSON对象
+//alert(json.tokenname);
+$("#tokenname").html(json.tokenname);
+var tokenbalance=json.balance/Math.pow(10,json.decimal);
+$("#tokenbalance").html(tokenbalance);
+
+});
+</script>
 <!-- Bootstrap 3.3.7 -->
 <script src="/views/static/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
 <!-- SlimScroll -->

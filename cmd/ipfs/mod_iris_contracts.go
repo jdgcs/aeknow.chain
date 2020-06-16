@@ -625,6 +625,8 @@ func iToken(ctx iris.Context) {
 	}
 
 	contractid := ctx.URLParam("contractid")
+	recipient_id := ctx.URLParam("recipient_id")
+	sendamount := ctx.URLParam("amount")
 
 	needReg := true
 	ak := ""
@@ -665,7 +667,7 @@ func iToken(ctx iris.Context) {
 		needReg = false
 		ak := globalAccount.Address
 
-		myPage := PageWallet{PageId: 23, Account: ak, PageTitle: contractid, Balance: thisamount, Nonce: myNonce}
+		myPage := PageWallet{PageId: 23, Account: ak, PageTitle: contractid, Balance: thisamount, Nonce: myNonce, Recipient_id: recipient_id, Amount: sendamount}
 		ctx.ViewData("", myPage)
 		ctx.View("token.php")
 
