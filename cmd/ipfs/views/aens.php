@@ -113,7 +113,7 @@
                 </li> 
                 
                  <li class="list-group-item">
-                  <i class="glyphicon glyphicon-retweet"></i> <b>AENS Bidding:</b> <a class="pull-right"/>{{.PageId}} </a>
+                  <i class="glyphicon glyphicon-retweet"></i> <b>AENS Names:</b> <a class="pull-right"/><div id="aenscount"></div> </a>
                  
                 </li>   
                 
@@ -168,18 +168,11 @@
             
 			<div class="tab-pane table-responsive no-padding " >
 				
-				<table class="table no-margin">
-                  <thead>
-                  <tr>
-                    <th>Expire Height</th>
-                    <th>Name</th>                   
-                    <th ><center>Operation</center></th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                  {{.PageContent}}
-                  </tbody>
-                </table>
+				
+					  
+                 <div id="aenslist"></div>
+                 
+                  
 			</div>
 			
 </div>
@@ -221,12 +214,27 @@
 
 <!-- jQuery 3 -->
 <script src="/views/static/bower_components/jquery/dist/jquery.min.js"></script>
+<script type="text/javascript">
+$.get("https://www.aeknow.org/api/aens/{{.Account}}",function(response){
+$("#tokenlist").html(response);
+var json = JSON.parse(response);
+ //alert(json.tokenname);
+
+var aenslist="<table class=\"table no-margin\"><thead> <tr><th>Expire Height</th><th>Name</th><th ><center>Operation</center></th></thead><tbody>";
+ for(var i = 0; i < json.names.length; i++){
+	 var aens = json.names[i];
+	 var leftdays=(aens.expire_height-json.topheight)/480;
+	 leftdays=leftdays.toFixed(2);
+	 aenslist=aenslist+"<tr><td>"+aens.expire_height+"(~"+leftdays+" days)</td><td><a href=https://www.aeknow.org/aens/viewbids/"+aens.aensname+" target=_blank>"+aens.aensname+"</a></td><td align=\"center\"><div class=\"btn-group\"><a href=/updatename?aensname="+aens.aensname+"><button type=\"button\" class=\"btn btn-success\">Update</button></a> &nbsp; <a href=/transfername?aensname="+aens.aensname+"><button type=\"button\" class=\"btn btn-info pull-right\">Transfer</button></a></div></td></tr>";
+	 }
+aenslist=aenslist+"</tbody></table>";
+$("#aenslist").html(aenslist);
+$("#aenscount").html(json.names.length);
+});
+</script>
 <!-- Bootstrap 3.3.7 -->
 <script src="/views/static/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
-<!-- SlimScroll -->
-<script src="/views/static/bower_components/jquery-slimscroll/jquery.slimscroll.min.js"></script>
-<!-- FastClick -->
-<script src="/views/static/bower_components/fastclick/lib/fastclick.js"></script>
+
 <!-- AdminLTE App -->
 <script src="/views/static/dist/js/adminlte.min.js"></script>
 <!-- AdminLTE for demo purposes -->

@@ -143,9 +143,11 @@ func iDoDeployToken(ctx iris.Context) {
 	callStr := ""
 	if ostype == "windows" {
 		callStr = `init("` + name + `",` + decimals + `,"` + symbol + `",Some(` + total_supply + `))`
+		//callStr = `init(\"` + name + `\",` + decimals + `,\"` + symbol + `\",Some(` + total_supply + `))`
 	} else {
 		callStr = "init(\\\"" + name + "\\\"," + decimals + ",\\\"" + symbol + "\\\",Some(" + total_supply + "))"
 	}
+
 	fmt.Println(callStr, contract_name)
 
 	callData := getCallData(callStr, contract_name)

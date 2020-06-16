@@ -522,7 +522,7 @@ func getAENS(ctx iris.Context) {
 	node := naet.NewNode(NodeConfig.PublicNode, false)
 
 	akBalance, err := node.GetAccount(globalAccount.Address)
-	topHeight, _ := node.GetHeight()
+	//	topHeight, _ := node.GetHeight()
 	var thisamount string
 	var myNonce uint64
 	if err != nil {
@@ -541,38 +541,7 @@ func getAENS(ctx iris.Context) {
 	//fmt.Println(myNonce)
 	//fmt.Println(thisamount)
 
-	myurl := NodeConfig.APINode + "/api/aens/" + globalAccount.Address
-	str := httpGet(myurl)
-	var s NameSlice
-	err = json.Unmarshal([]byte(str), &s)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	var i int
-	myNames := ""
-	for i = 0; i < len(s.Names); i++ {
-		//fmt.Println(s.Names[i].Aensname)
-		num1 := float64(s.Names[i].Expire_height - int64(topHeight))
-		num2 := float64(480)
-
-		d1 := num1 / num2
-		days := fmt.Sprintf("%.1f", d1)
-		myNames = myNames + `<tr>
-                    <td><a href="">` + strconv.FormatInt(s.Names[i].Expire_height, 10) + `</a>(~` + days + ` days)</td>
-                    <td><a href=` + NodeConfig.APINode + `/` + s.Names[i].Aensname + ` target=_blank>` + s.Names[i].Aensname + `</a></td>                    
-                    <td align="center">
-                      <div class="btn-group">
-						  <a href=/updatename?aensname=` + s.Names[i].Aensname + `><button type="button" class="btn btn-success">Update</button></a> &nbsp;
-						  <a href=/transfername?aensname=` + s.Names[i].Aensname + `><button type="button" class="btn btn-info pull-right">Transfer</button></a>
-						</div>
-                    </td>
-                  </tr>`
-	}
-
-	myAENSLists := template.HTML(myNames)
-	aensCount := len(s.Names)
-	myPage := PageAENS{PageId: aensCount, Account: globalAccount.Address, PageTitle: "Wallet", Balance: thisamount, Nonce: myNonce, PageContent: myAENSLists}
+	myPage := PageAENS{PageId: 1, Account: globalAccount.Address, PageTitle: "Wallet", Balance: thisamount, Nonce: myNonce, PageContent: ""}
 
 	ctx.ViewData("", myPage)
 	ctx.View("aens.php")
