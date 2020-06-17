@@ -1,6 +1,6 @@
 **AEKnow.chain** is designed to be a totally decentralized SNS aepp, based on **Aeternity**, especially **AENS**, **Hugo** and **IPFS**. Each user’s node acts as server and client at the same time.
 
-The latest version foucs on the support of AEX-9 tokens. Currently, the Assets management fucntions shoule be stable for users. 
+The latest version foucs on the support of AEX-9 tokens. Currently, the Assets management fucntions should be stable for users. 
 
 ## Highlights
  - Deploy AEX-9 token and publish the token information to https://www.aeknow.org by ONE-CLICK.
