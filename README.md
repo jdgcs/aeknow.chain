@@ -22,5 +22,5 @@ Download the latest release for Ubuntu Linux users: https://github.com/jdgcs/aek
 
 Run ./start.sh in the terminal, then open http://127.0.0.1:8888/ with any browser.
 
-###Other OS
+### Other OS
 Compile the code.
