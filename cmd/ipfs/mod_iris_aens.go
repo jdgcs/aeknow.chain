@@ -463,54 +463,7 @@ func getAENSBidding(ctx iris.Context) {
 	//fmt.Println(myNonce)
 	//fmt.Println(thisamount)
 
-	myurl := NodeConfig.APINode + "/api/aensbidding/" + ak
-	str := httpGet(myurl)
-	//fmt.Println(myurl)
-	//fmt.Println(str)
-	var s NameBidSlice
-	err = json.Unmarshal([]byte(str), &s)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	var i int
-	myNames := ""
-	for i = 0; i < len(s.Names); i++ {
-		//fmt.Println(s.Names[i].Aensname)
-		bidBalance := ToBigFloat(s.Names[i].Lastprice)
-		myimultiple := big.NewFloat(0.000000000000000001) //18 dec
-		mylastprice := new(big.Float).Mul(bidBalance, myimultiple).String()
-		if s.Names[i].Lastbidder == globalAccount.Address {
-			myNames = myNames + `<tr>                    
-                    <td><a href=` + NodeConfig.APINode + `/aens/viewbids/` + s.Names[i].Aensname + ` target=_blank>` + s.Names[i].Aensname + `</a></td>                    
-                    <td><a href=` + NodeConfig.APINode + `/address/wallet/` + s.Names[i].Lastbidder + ` target=_blank>` + s.Names[i].Lastbidder + `</a></td>
- 					<td>` + mylastprice + ` AE </td>
-                    <td align="center">
-                      <div class="btn-group">
-                     <button type="button" class="btn btn-success">OK</button> &nbsp;
-						
-						</div>
-                    </td>
-                  </tr>`
-		} else {
-			myNames = myNames + `<tr>                    
-                    <td><a href=` + NodeConfig.APINode + `/aens/viewbids/` + s.Names[i].Aensname + ` target=_blank>` + s.Names[i].Aensname + `</a></td>                    
-                    <td><a href=` + NodeConfig.APINode + `/address/wallet/` + s.Names[i].Lastbidder + ` target=_blank>` + s.Names[i].Lastbidder + `</a></td>
- 					<td>` + mylastprice + ` AE </td>
-                    <td align="center">
-                      <div class="btn-group">
-					<form action="/queryaens" method="post">
-                      <input type="hidden" name="aensname" value="` + s.Names[i].Aensname + `" class="form-control"><button type="submit"  type="button" class="btn btn-warning">Add price</button></a> &nbsp;
-					</form>
-						</div>
-                    </td>
-                  </tr>`
-		}
-	}
-
-	myAENSLists := template.HTML(myNames)
-	aensCount := len(s.Names)
-	myPage := PageAENS{PageId: aensCount, Account: ak, PageTitle: "Wallet", Balance: thisamount, Nonce: myNonce, PageContent: myAENSLists}
+	myPage := PageAENS{PageId: 1, Account: ak, PageTitle: "Wallet", Balance: thisamount, Nonce: myNonce, PageContent: ""}
 	ctx.ViewData("", myPage)
 	ctx.View("aens_bidding.php")
 }

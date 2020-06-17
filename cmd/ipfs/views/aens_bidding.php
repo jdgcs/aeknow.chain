@@ -18,6 +18,7 @@
   <!-- AdminLTE Skins. Choose a skin from the css/skins
        folder instead of downloading all of them to reduce the load. -->
  <link rel="stylesheet" href="/views/static/dist/css/skins/skin.css">
+ <link rel="dns-prefetch" href="https://www.aeknow.org">
   <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
   <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
   <!--[if lt IE 9]>
@@ -113,7 +114,7 @@
                 </li> 
                 
                  <li class="list-group-item">
-                  <i class="glyphicon glyphicon-retweet"></i> <b>AENS Bidding:</b> <a class="pull-right"/>{{.PageId}} </a>
+                  <i class="glyphicon glyphicon-retweet"></i> <b>AENS Bidding:</b> <a class="pull-right"/><div id="aenscount"></div> </a>
                  
                 </li>   
                 
@@ -167,20 +168,7 @@
             <div class="tab-content1">
             
 			<div class="tab-pane table-responsive no-padding " >
-				
-				<table class="table no-margin">
-                  <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Last Bidder</th>   
-                    <th>Last Price</th>                 
-                    <th ><center>Operation</center></th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                  {{.PageContent}}
-                  </tbody>
-                </table>
+                <div id="aenslist"></div>
 			</div>
 			
 </div>
@@ -222,6 +210,28 @@
 
 <!-- jQuery 3 -->
 <script src="/views/static/bower_components/jquery/dist/jquery.min.js"></script>
+<script type="text/javascript">
+$.get("https://www.aeknow.org/api/aensbidding/{{.Account}}",function(response){
+
+var json = JSON.parse(response);
+ //alert(json.tokenname);
+
+var aenslist="<table class=\"table no-margin\"><thead> <tr><th>Name</th><th>Last Bidder</th><th>Last Price</th><th ><center>Operation</center></th></thead><tbody>";
+ for(var i = 0; i < json.names.length; i++){
+	 var aens = json.names[i];
+	 var lastprice=aens.lastprice/1000000000000000000;
+	 lastprice=lastprice.toFixed(2);
+	 if(aens.lastbidder=="{{.Account}}"){
+		aenslist=aenslist+"<tr><td><a href=https://www.aeknow.org/aens/viewbids/"+aens.aensname+" target=_blank>"+aens.aensname+"</a></td><td><a href=https://www.aeknow.org/address/wallet/"+aens.lastbidder+" target=_blank>"+aens.lastbidder+"</a></td><td>"+lastprice+" AE</td><td align=\"center\"> <div class=\"btn-group\"><button type=\"button\" class=\"btn btn-success\">OK</button> &nbsp;</div></td></tr>";
+	}else{
+		aenslist=aenslist+"<tr><td><a href=https://www.aeknow.org/aens/viewbids/"+aens.aensname+" target=_blank>"+aens.aensname+"</a></td><td><a href=https://www.aeknow.org/address/wallet/"+aens.lastbidder+" target=_blank>"+aens.lastbidder+"</td><td>"+lastprice+" AE</td><td align=\"center\"><div class=\"btn-group\"><form action=\"/queryaens\" method=\"post\"><input type=\"hidden\" name=\"aensname\" value=\""+aens.aensname+"\" class=\"form-control\"><button type=\"submit\"  type=\"button\" class=\"btn btn-warning\">Add price</button> &nbsp;</form></div></td></tr>";
+		}
+	 }
+aenslist=aenslist+"</tbody></table>";
+$("#aenslist").html(aenslist);
+$("#aenscount").html(json.names.length);
+});
+</script>
 <!-- Bootstrap 3.3.7 -->
 <script src="/views/static/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
 <!-- SlimScroll -->
