@@ -165,7 +165,7 @@
 					  <div class="input-group">
                     <input type="text" class="form-control" name="amount" placeholder="such as 7.89" value="{{.Amount}}"> 
                     <span class="input-group-addon">
-                      AE
+                      
                      </span>
                      </div>
                   </div>
