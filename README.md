@@ -20,7 +20,7 @@ For Chinese users: https://pan.baidu.com/s/14vZViwVUnk8Xjs2SLdBn0g Open code: p9
 ### Linux
 Download the latest release for Ubuntu Linux users: https://github.com/jdgcs/aeknow.chain/releases
 
-Run ./start.sh in the terminal, then open http://127.0.0.1t:8888/ with any browser.
+Run ./start.sh in the terminal, then open http://127.0.0.1:8888/ with any browser.
 
 ###Other OS
 Compile the code.
