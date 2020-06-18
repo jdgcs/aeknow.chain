@@ -455,10 +455,10 @@ func iTokenTransfer(ctx iris.Context) {
 	TokenSignAccount, err := account.LoadFromKeyStoreFile("data/accounts/"+sender_id, password)
 	if err != nil {
 		ak := globalAccount.Address
-		myPage := PageWallet{PageId: 23, Account: ak, PageTitle: "Failed:Could not Read Account"}
+		myPage := PageWallet{PageId: 23, Account: ak, PageTitle: "Password error:Could not Read Account"}
 		ctx.ViewData("", myPage)
-		ctx.View("transaction.php")
-
+		ctx.View("error.php")
+		return
 	}
 
 	tx, err := transactions.NewContractCallTx(ownerID, contractID, amount, gasLimit, gasPrice, abiVersion, callData, ttlnoncer)

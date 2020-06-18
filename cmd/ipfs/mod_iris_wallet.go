@@ -239,6 +239,9 @@ func iCheckLogin(ctx iris.Context) {
 	myAccount, err := account.LoadFromKeyStoreFile("data/accounts/"+accountname, password)
 	if err != nil {
 		fmt.Println("Could not create myAccount's Account:", err)
+		myPage := PageWallet{PageTitle: "Password error:Could not Read Account"}
+		ctx.ViewData("", myPage)
+		ctx.View("error.php")
 
 	} else {
 		// Set user as authenticated
@@ -289,10 +292,10 @@ func iMakeTranscaction(ctx iris.Context) {
 
 		ak := globalAccount.Address
 
-		myPage := PageWallet{PageId: 23, Account: ak, PageTitle: "Failed:Could not Read Account"}
+		myPage := PageWallet{PageId: 23, Account: ak, PageTitle: "Password error:Could not Read Account"}
 		ctx.ViewData("", myPage)
-		ctx.View("transaction.php")
-
+		ctx.View("error.php")
+		return
 	}
 
 	bobAddress := recipient_id
