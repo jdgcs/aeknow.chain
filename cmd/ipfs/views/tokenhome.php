@@ -141,17 +141,21 @@
             </div>
             
             <div class="box-footer">
-                  <form action="/querycontract" method="post">
+                  <form name="checktoken" action="https://www.aeknow.org/token/checktoken" method="post" target="_blank" >
                     <div class="input-group">
-                      <input type="text" name="aensname" placeholder="Check ct_ contracts infomation ..." class="form-control">
+                      <input type="text" name="tokenname" placeholder="Check Token name or ct_ contracts infomation ..." class="form-control">
                       <span class="input-group-btn">
-                            <button type="submit" class="btn btn-warning btn-flat">Search</button>
+                            <a href='#' οnclick='doLogin()'><button class="btn btn-warning btn-flat">Check</button></a>
                           </span>
                     </div>
                   </form>
                 </div>
             <!-- /.box-header -->
-        
+        <script>
+function doLogin(){
+	document.checktoken.submit();
+}
+</script>
         
         <div class="nav-tabs-custom">
             <ul class="nav nav-tabs">
