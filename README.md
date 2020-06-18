@@ -13,7 +13,7 @@ The latest version foucs on the support of AEX-9 tokens. Currently, the Assets m
 ### Windows
 Download the latest release for Windows users: https://github.com/jdgcs/aeknow.chain/releases
 
-Click start.bat, then open http://127.0.0.1t:8888/ with any browser.
+Click start.bat, then open http://127.0.0.1:8888/ with any browser.
 
 For Chinese users: https://pan.baidu.com/s/14vZViwVUnk8Xjs2SLdBn0g Open code: p9po
 
