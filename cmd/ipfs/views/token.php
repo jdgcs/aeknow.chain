@@ -165,7 +165,7 @@
 					  <div class="input-group">
                     <input type="text" class="form-control" name="amount" placeholder="such as 7.89" value="{{.Amount}}"> 
                     <span class="input-group-addon">
-                      
+                      <div id="tokenname1"></div>
                      </span>
                      </div>
                   </div>
@@ -273,6 +273,7 @@ $("#tokenlist").html(response);
 var json = JSON.parse(response); // 将字符串转换为JSON对象
 //alert(json.tokenname);
 $("#tokenname").html(json.tokenname);
+$("#tokenname1").html(json.tokenname);
 var tokenbalance=json.balance/Math.pow(10,json.decimal);
 $("#tokenbalance").html(tokenbalance);
 
