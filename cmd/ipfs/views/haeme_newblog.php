@@ -71,10 +71,10 @@
 
 <tr>
 <td width="60px" align="left"  valign="top">
-<b>Description:</b>
+<b>Abstract:</b>
 </td>
 <td align="left">
-<textarea rows="6" style="margin-left:10px;width:100%"></textarea>
+<textarea rows="6" name="description" style="margin-left:10px;width:100%"></textarea>
 </td>
 </tr>
 

@@ -44,7 +44,7 @@
 <b>Title:</b>
 </td>
 <td>
-<input type="text" name="title" placeholder="title" style="margin-left:10px;;">
+<input type="text" name="title" placeholder="title" style="margin-left:10px;" value="{{.PageTitle}}">
 </td>
 </tr>
 
@@ -54,7 +54,12 @@
 <b>Keywords:</b>
 </td>
 <td>
-<input type="text"  name="tags" placeholder="Keywords of the article" style="margin-left:10px;;">
+<input type="text"  name="tags" placeholder="Keywords of the article" style="margin-left:10px;" value="{{.PageTags}}">
+ <div class="checkbox">
+                  <label>
+                    <input type="checkbox"  name="draft"> Draft
+                  </label>
+                </div>
 </td>
 </tr>
 
@@ -64,17 +69,17 @@
 <b>Categories:</b>
 </td>
 <td>
-<input type="text" name="categories" placeholder="Categories"  style="margin-left:10px;">
+<input type="text" name="categories" placeholder="Categories"  style="margin-left:10px;" value="{{.PageCategories}}">
 </td>
 </tr>
 
 
 <tr>
 <td width="60px" align="left"  valign="top">
-<b>Description:</b>
+<b>Abstract:</b>
 </td>
 <td align="left">
-<textarea rows="6" style="margin-left:10px;width:100%"></textarea>
+<textarea rows="6" name="description" style="margin-left:10px;width:100%">{{.PageDescription}}</textarea>
 </td>
 </tr>
 
@@ -82,10 +87,10 @@
 </table>
  <input type="hidden" name="editpath" value="{{.EditPath}}">
 		 <div id="test-editormd">
-                <textarea style="display:none;" name="content"></textarea>
+                <textarea style="display:none;" name="content">{{.PageContent}}</textarea>
             </div>
         </div>
-        <button type="submit" class="btn btn-success pull-left" style="background-color:green;color:white">Post</button>
+        <button type="submit" class="btn btn-success pull-left" style="background-color:green;color:white">Save</button>
 
         <script src="/views/editor.md/examples/js/jquery.min.js"></script>
         <script src="/views/editor.md/editormd.min.js"></script>      

@@ -24,12 +24,13 @@ import (
 )
 
 type PageBlog struct {
-	Account        string
-	PageContent    template.HTML
-	PageTitle      string
-	PageTags       string
-	PageCategories string
-	EditPath       string
+	Account         string
+	PageContent     template.HTML
+	PageTitle       string
+	PageDescription string
+	PageTags        string
+	PageCategories  string
+	EditPath        string
 }
 
 type IPFSConfig struct {
@@ -115,7 +116,10 @@ func iSaveBlog(ctx iris.Context) {
 	tags := ctx.FormValue("tags")
 	tags = strings.Replace(tags, "，", ",", -1)
 	content := ctx.FormValue("content")
+	description := ctx.FormValue("description")
 	editpath := ctx.FormValue("editpath")
+	draft := ctx.FormValue("draft")
+
 	t := time.Now()
 	timestamp := strconv.FormatInt(t.UTC().UnixNano(), 10)
 
@@ -147,6 +151,8 @@ title: "` + title + `"
 date: ` + t.UTC().Format(time.UnixDate) + `
 categories: ` + catsstr + `
 tags: ` + tagstr + `
+draft: ` + draft + `
+description: "` + description + `"
 ---`
 	//TODO:ADD proper fields to UI
 	/*
@@ -241,6 +247,7 @@ func iEditBlog(ctx iris.Context) {
 	title := ""
 	categories := ""
 	tags := ""
+	description := ""
 	editpath := tmpPath[len(tmpPath)-2] + ".md"
 
 	headerCount := 0
@@ -274,6 +281,11 @@ func iEditBlog(ctx iris.Context) {
 					title = strings.Replace(title, "\"", "", -1)
 				}
 
+				if strings.Index(string(a), "description: \"") > -1 {
+					description = strings.Replace(string(a), "description: ", "", 1)
+					description = strings.Replace(description, "\"", "", -1)
+				}
+
 				if strings.Index(string(a), "categories: [") > -1 {
 					categories = strings.Replace(string(a), "categories: ", "", 1)
 					categories = strings.Replace(categories, "[\"", "", -1)
@@ -298,7 +310,7 @@ func iEditBlog(ctx iris.Context) {
 	}
 
 	fmt.Println(fileName)
-	myPage := PageBlog{Account: globalAccount.Address, PageTitle: title, PageContent: template.HTML(mdstr), PageTags: tags, PageCategories: categories, EditPath: editpath}
+	myPage := PageBlog{Account: globalAccount.Address, PageTitle: title, PageDescription: description, PageContent: template.HTML(mdstr), PageTags: tags, PageCategories: categories, EditPath: editpath}
 	ctx.ViewData("", myPage)
 	ctx.View("haeme_editblog.php")
 }
