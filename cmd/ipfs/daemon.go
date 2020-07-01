@@ -196,12 +196,15 @@ func defaultMux(path string) corehttp.ServeOption {
 }
 
 func daemonFunc(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) (_err error) {
-
+	myreq = req
+	myres = re
+	myenv = env
 	//myWeb()
-	go myiris()
-
+	//go myiris()
+	myiris()
 	//return nil
-	return daemonFunc_old(req, re, env)
+	//return daemonFunc_old(req, re, env)
+	return nil
 }
 func daemonFunc_old(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) (_err error) {
 	// Inject metrics before we do anything

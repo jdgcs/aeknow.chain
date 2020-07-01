@@ -244,15 +244,21 @@ func iCheckLogin(ctx iris.Context) {
 		ctx.View("error.php")
 
 	} else {
+		globalAccount = *myAccount //作为呈现账号
+		signAccount = myAccount    //作为签名账号
+		IPFS_PATH := "./data/site/" + globalAccount.Address + "/repo"
+		_ = os.Setenv("IPFS_PATH", IPFS_PATH)
+
+		checkIPFSRepo(globalAccount.Address)
 		// Set user as authenticated
 		session := sess.Start(ctx)
 		session.Set("authenticated", true)
 
-		globalAccount = *myAccount     //作为呈现账号
-		signAccount = myAccount        //作为签名账号
 		NodeConfig = getConfigString() //读取节点设置
 		MyIPFSConfig = getIPFSConfig() //读取IPFS节点配置
 		lastIPFS = ""
+
+		go daemonFunc_old(myreq, myres, myenv)
 
 		initHugo() //登录成功初始化
 		// Authentication goes here
@@ -537,4 +543,33 @@ func checkLogin(ctx iris.Context) bool {
 	}
 
 	return false
+}
+
+func checkIPFSRepo(RepoName string) {
+	IPFSCheck := "./data/site/" + RepoName + "/repo/version"
+	IPFS_PATH := "./data/site/" + RepoName + "/repo/"
+	_ = os.Setenv("IPFS_PATH", IPFS_PATH)
+
+	if ostype == "windows" {
+		c := "set IPFS_PATH=" + IPFS_PATH
+		_ = exec.Command("cmd", "/c", c)
+		fmt.Println(c)
+	} else {
+		c := "export IPFS_PATH=" + IPFS_PATH
+		_ = exec.Command("sh", "-c", c)
+		fmt.Println(c)
+	}
+
+	if !FileExist(IPFSCheck) {
+		if ostype == "windows" {
+		} else {
+			c := "export IPFS_PATH=" + IPFS_PATH + " && mkdir " + IPFS_PATH + " && ./ipfs init && cp ./data/swarm.key " + IPFS_PATH
+			cmd := exec.Command("sh", "-c", c)
+			fmt.Println(c)
+			out, _ := cmd.Output()
+			fmt.Println(string(out))
+
+		}
+	}
+
 }

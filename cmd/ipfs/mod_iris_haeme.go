@@ -54,7 +54,7 @@ var MyIPFSConfig IPFSConfig
 var lastIPFS string
 
 func getIPFSConfig() IPFSConfig {
-	configFilePath := "./data/repo/config"
+	configFilePath := "./data/site/" + globalAccount.Address + "/repo/config"
 
 	_, err := os.Stat(configFilePath)
 
@@ -407,7 +407,7 @@ func iBuildSite(ctx iris.Context) {
 		addstr := string(out)
 		fmt.Println(string(out))
 		fileExec = "knode.exe"
-		c = fileExec + " add -r .\\data\\site\\" + globalAccount.Address + "\\public"
+		c = "set IPFS_PATH=.\\data\\site\\" + globalAccount.Address + "\\repo && " + fileExec + " add -r .\\data\\site\\" + globalAccount.Address + "\\public"
 		fmt.Println(c)
 		cmd = exec.Command("cmd", "/c", c)
 		out, _ = cmd.Output()
@@ -418,7 +418,7 @@ func iBuildSite(ctx iris.Context) {
 		strArrayNew = strings.Split(strArrayNew[len(strArrayNew)-2], " ")
 		lastIPFS = strArrayNew[len(strArrayNew)-2]
 
-		c = fileExec + " name publish " + lastIPFS
+		c = "set IPFS_PATH=.\\data\\site\\" + globalAccount.Address + "\\repo && " + fileExec + " name publish " + lastIPFS
 		cmd = exec.Command("cmd", "/c", c)
 		out, err = cmd.Output()
 		if err != nil {
@@ -442,7 +442,7 @@ func iBuildSite(ctx iris.Context) {
 		fmt.Println(string(out))
 
 		fileExec = "./ipfs"
-		c = fileExec + " add -r ./data/site/" + globalAccount.Address + "/public"
+		c = "export IPFS_PATH=./data/site/" + globalAccount.Address + "/repo && " + fileExec + " add -r ./data/site/" + globalAccount.Address + "/public"
 		fmt.Println(c)
 		//c := "/home/ae/dev/go/go-ipfs/cmd/ipfs/ipfs add -r /home/ae/dev/go/go-ipfs/cmd/ipfs/data/site/default"
 		cmd = exec.Command("sh", "-c", c)
@@ -456,8 +456,8 @@ func iBuildSite(ctx iris.Context) {
 
 		//c = "/home/ae/dev/go/go-ipfs/cmd/ipfs/ipfs name publish " + hashstr
 		//fileExec = "./ipfs"
-		c = fileExec + " name publish " + lastIPFS
-		//fmt.Println(c)
+		c = "export IPFS_PATH=./data/site/" + globalAccount.Address + "/repo && " + fileExec + " name publish " + lastIPFS
+		fmt.Println(c)
 		cmd = exec.Command("sh", "-c", c)
 		out, err = cmd.Output()
 		if err != nil {
