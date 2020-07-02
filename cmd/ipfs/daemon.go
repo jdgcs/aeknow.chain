@@ -237,6 +237,7 @@ func daemonFunc_old(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environ
 
 	cctx := env.(*oldcmds.Context)
 
+	cctx.ConfigRoot = os.Getenv("IPFS_PATH")
 	// check transport encryption flag.
 	unencrypted, _ := req.Options[unencryptTransportKwd].(bool)
 	if unencrypted {
