@@ -610,41 +610,22 @@ func checkLogin(ctx iris.Context) bool {
 func checkIPFSRepo(RepoName string) {
 	IPFSCheck := "./data/site/" + RepoName + "/repo/version"
 
-	//_ = os.Setenv("IPFS_PATH", IPFS_PATH)
-
 	if !FileExist(IPFSCheck) {
 		if ostype == "windows" {
 			IPFS_PATH := "data\\site\\" + RepoName + "\\repo"
-			fileName := "bin\\initIPFS.bat"
-			execContent := "mkdir " + IPFS_PATH + " \nset IPFS_PATH=" + IPFS_PATH + "\\\nbin\\ipfs.exe init\ncopy data\\swarm.key " + IPFS_PATH
-			f, err := os.Create(fileName)
-			defer f.Close()
-			if err != nil {
-				fmt.Println(err.Error())
-			} else {
-				_, _ = f.Write([]byte(execContent))
+			c := "mkdir " + IPFS_PATH + " && set IPFS_PATH=" + IPFS_PATH + "\\&& bin\\ipfs.exe init &&copy data\\swarm.key " + IPFS_PATH
+			fmt.Println(c)
 
-			}
-
-			fmt.Println(fileName)
-			cmd := exec.Command("cmd", "/c", fileName)
+			cmd := exec.Command("cmd", "/c", c)
 			out, _ := cmd.Output()
 
 			fmt.Println(string(out))
 		} else {
 			IPFS_PATH := "./data/site/" + RepoName + "/repo"
-			fileName := "./bin/initIPFS.sh"
-			execContent := "mkdir " + IPFS_PATH + " \n export IPFS_PATH=" + IPFS_PATH + "/\n ./bin/ipfs init \n cp ./data/swarm.key " + IPFS_PATH
-			f, err := os.Create(fileName)
-			defer f.Close()
-			if err != nil {
-				fmt.Println(err.Error())
-			} else {
-				_, _ = f.Write([]byte(execContent))
 
-			}
+			c := "mkdir " + IPFS_PATH + "&& export IPFS_PATH=" + IPFS_PATH + "/&& ./bin/ipfs init && cp ./data/swarm.key " + IPFS_PATH
 
-			fmt.Println(fileName)
+			fmt.Println(c)
 			cmd := exec.Command("sh", "-c", fileName)
 			out, _ := cmd.Output()
 
