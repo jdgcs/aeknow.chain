@@ -286,8 +286,9 @@ func iCheckLogin(ctx iris.Context) {
 	} else {
 		globalAccount = *myAccount //作为呈现账号
 		signAccount = myAccount    //作为签名账号
-		IPFS_PATH := "./data/site/" + globalAccount.Address + "/repo"
+		IPFS_PATH := "./data/site/" + globalAccount.Address + "/repo/"
 		_ = os.Setenv("IPFS_PATH", IPFS_PATH)
+		checkHugo()
 
 		checkIPFSRepo(globalAccount.Address)
 		// Set user as authenticated
@@ -297,11 +298,11 @@ func iCheckLogin(ctx iris.Context) {
 		NodeConfig = getConfigString() //读取节点设置
 		MyIPFSConfig = getIPFSConfig() //读取IPFS节点配置
 		lastIPFS = ""
-
+		configHugo() //登录成功初始化
 		//go daemonFunc_old(myreq, myres, myenv)
 		go bootIPFS()
 		NodeOnline = true
-		initHugo() //登录成功初始化
+
 		// Authentication goes here
 		// ...
 
@@ -488,8 +489,7 @@ func iWallet(ctx iris.Context) {
 		ctx.View("register.php")
 	}
 }
-
-func initHugo() {
+func checkHugo() {
 	if ostype == "windows" {
 		hugoDir := ".\\data\\site\\" + globalAccount.Address
 		if !FileExist(hugoDir) {
@@ -529,17 +529,7 @@ func initHugo() {
 				fmt.Println(err)
 			}
 
-			//init theme config file
-			themeConfigFile := readFileStr(".\\data\\themes\\config.toml")
-			targetFile := ".\\data\\site\\" + globalAccount.Address + "\\config.toml"
-			err = ioutil.WriteFile(targetFile, []byte(themeConfigFile), 0644)
-			if err != nil {
-				panic(err)
-			}
-
-			fmt.Println(targetFile + "...done.")
 			fmt.Println(string(out))
-
 		}
 	} else {
 		hugoDir := "./data/site/" + globalAccount.Address
@@ -570,27 +560,45 @@ func initHugo() {
 			if err != nil {
 				fmt.Println(err)
 			}
-
-			//init theme config file
-			themeConfigFile := readFileStr("./data/themes/config.toml")
-			targetFile := "./data/site/" + globalAccount.Address + "/config.toml"
-			err = ioutil.WriteFile(targetFile, []byte(themeConfigFile), 0644)
-			if err != nil {
-				panic(err)
-			}
-
-			fmt.Println(targetFile + "...done.")
-			//TODO:	1.mkdir post;2.copy themes;3.init config files;4.init ipns node info;5.add search and remove about page;6.add default help link
-			//Done:
-			//addstr := string(out)
 			fmt.Println(string(out))
 		}
+	}
+}
+
+func configHugo() {
+	if ostype == "windows" {
+		//init theme config file
+		themeConfigFile := readFileStr(".\\data\\themes\\config.toml")
+		targetFile := ".\\data\\site\\" + globalAccount.Address + "\\config.toml"
+		err := ioutil.WriteFile(targetFile, []byte(themeConfigFile), 0644)
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println(targetFile + "...done.")
+		//
+
+	} else {
+		//init theme config file
+		themeConfigFile := readFileStr("./data/themes/config.toml")
+		targetFile := "./data/site/" + globalAccount.Address + "/config.toml"
+		err := ioutil.WriteFile(targetFile, []byte(themeConfigFile), 0644)
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println(targetFile + "...done.")
+		//TODO:	1.mkdir post;2.copy themes;3.init config files;4.init ipns node info;5.add search and remove about page;6.add default help link
+		//Done:
+		//addstr := string(out)
+
 	}
 }
 
 func readFileStr(fileName string) string {
 	if contents, err := ioutil.ReadFile(fileName); err == nil {
 		//因为contents是[]byte类型，直接转换成string类型后会多一行空格,需要使用strings.Replace替换换行符
+		fmt.Println(MyIPFSConfig.Identity.PeerID)
 		return strings.Replace(string(contents), "{{.Baseurl}}", NodeConfig.IPFSNode+"/ipns/"+MyIPFSConfig.Identity.PeerID+"/", -1)
 	}
 	return ""
@@ -615,18 +623,15 @@ func checkIPFSRepo(RepoName string) {
 			IPFS_PATH := "data\\site\\" + RepoName + "\\repo"
 			c := "mkdir " + IPFS_PATH + " && set IPFS_PATH=" + IPFS_PATH + "\\&& bin\\ipfs.exe init &&copy data\\swarm.key " + IPFS_PATH
 			fmt.Println(c)
-
 			cmd := exec.Command("cmd", "/c", c)
 			out, _ := cmd.Output()
 
 			fmt.Println(string(out))
 		} else {
 			IPFS_PATH := "./data/site/" + RepoName + "/repo"
-
 			c := "mkdir " + IPFS_PATH + "&& export IPFS_PATH=" + IPFS_PATH + "/&& ./bin/ipfs init && cp ./data/swarm.key " + IPFS_PATH
-
 			fmt.Println(c)
-			cmd := exec.Command("sh", "-c", fileName)
+			cmd := exec.Command("sh", "-c", c)
 			out, _ := cmd.Output()
 
 			fmt.Println(string(out))

@@ -51,8 +51,12 @@ var MyIPFSConfig IPFSConfig
 var lastIPFS string
 
 func getIPFSConfig() IPFSConfig {
-	configFilePath := "./data/site/" + globalAccount.Address + "/repo/config"
-
+	configFilePath := ""
+	if ostype == "windows" {
+		configFilePath = "data\\site\\" + globalAccount.Address + "\\repo\\config"
+	} else {
+		configFilePath = "./data/site/" + globalAccount.Address + "/repo/config"
+	}
 	_, err := os.Stat(configFilePath)
 
 	if err != nil {
