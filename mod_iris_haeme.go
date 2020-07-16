@@ -48,7 +48,39 @@ type IPFSDatastore struct {
 }
 
 var MyIPFSConfig IPFSConfig
+var MySiteConfig SiteConfig
 var lastIPFS string
+
+var SiteConfig struct {
+	Title             string
+	Subtitle          string
+	Description       string
+	Author            string
+	AuthorDescription string
+	Theme             string
+}
+
+func getSiteConfig() SiteConfig {
+
+	configFilePath := ""
+	if ostype == "windows" {
+		configFilePath = "data\\site\\" + globalAccount.Address + "\\site.json"
+	} else {
+		configFilePath := "./data/site/" + globalAccount.Address + "/site.json"
+	}
+	_, err := os.Stat(configFilePath)
+
+	if err != nil {
+		configFilePath = "./data/config_default.json"
+	}
+
+	JsonParse := NewJsonStruct()
+	readConfigfile := SiteConfig{}
+	JsonParse.Load(configFilePath, &readConfigfile)
+
+	return readConfigfile
+
+}
 
 func getIPFSConfig() IPFSConfig {
 	configFilePath := ""

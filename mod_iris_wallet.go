@@ -297,6 +297,7 @@ func iCheckLogin(ctx iris.Context) {
 
 		NodeConfig = getConfigString() //读取节点设置
 		MyIPFSConfig = getIPFSConfig() //读取IPFS节点配置
+		MyIPFSConfig = getSiteConfig() //读取网站设置
 		lastIPFS = ""
 		configHugo() //登录成功初始化
 		//go daemonFunc_old(myreq, myres, myenv)
@@ -596,9 +597,10 @@ func configHugo() {
 }
 
 func readFileStr(fileName string) string {
+	//TODO: how to config the site
 	if contents, err := ioutil.ReadFile(fileName); err == nil {
 		//因为contents是[]byte类型，直接转换成string类型后会多一行空格,需要使用strings.Replace替换换行符
-		fmt.Println(MyIPFSConfig.Identity.PeerID)
+		//fmt.Println(MyIPFSConfig.Identity.PeerID)
 		return strings.Replace(string(contents), "{{.Baseurl}}", NodeConfig.IPFSNode+"/ipns/"+MyIPFSConfig.Identity.PeerID+"/", -1)
 	}
 	return ""
