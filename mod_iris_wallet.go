@@ -297,7 +297,7 @@ func iCheckLogin(ctx iris.Context) {
 
 		NodeConfig = getConfigString() //读取节点设置
 		MyIPFSConfig = getIPFSConfig() //读取IPFS节点配置
-		MyIPFSConfig = getSiteConfig() //读取网站设置
+		MySiteConfig = getSiteConfig() //读取网站设置
 		lastIPFS = ""
 		configHugo() //登录成功初始化
 		//go daemonFunc_old(myreq, myres, myenv)
@@ -601,7 +601,13 @@ func readFileStr(fileName string) string {
 	if contents, err := ioutil.ReadFile(fileName); err == nil {
 		//因为contents是[]byte类型，直接转换成string类型后会多一行空格,需要使用strings.Replace替换换行符
 		//fmt.Println(MyIPFSConfig.Identity.PeerID)
-		return strings.Replace(string(contents), "{{.Baseurl}}", NodeConfig.IPFSNode+"/ipns/"+MyIPFSConfig.Identity.PeerID+"/", -1)
+		MyContents := strings.Replace(string(contents), "{{.SiteTitle}}", MySiteConfig.Title, -1)
+		MyContents = strings.Replace(MyContents, "{{.Author}}", MySiteConfig.Author, -1)
+		MyContents = strings.Replace(MyContents, "{{.AuthorDescription}}", MySiteConfig.AuthorDescription, -1)
+		MyContents = strings.Replace(MyContents, "{{.Subtitle}}", MySiteConfig.Subtitle, -1)
+		MyContents = strings.Replace(MyContents, "{{.SiteDescription}}", MySiteConfig.Description, -1)
+
+		return strings.Replace(MyContents, "{{.Baseurl}}", NodeConfig.IPFSNode+"/ipns/"+MyIPFSConfig.Identity.PeerID+"/", -1)
 	}
 	return ""
 }

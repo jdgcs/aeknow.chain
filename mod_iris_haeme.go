@@ -47,11 +47,7 @@ type IPFSDatastore struct {
 	Bootstrap          []string
 }
 
-var MyIPFSConfig IPFSConfig
-var MySiteConfig SiteConfig
-var lastIPFS string
-
-var SiteConfig struct {
+type SiteConfig struct {
 	Title             string
 	Subtitle          string
 	Description       string
@@ -60,13 +56,17 @@ var SiteConfig struct {
 	Theme             string
 }
 
+var MyIPFSConfig IPFSConfig
+var MySiteConfig SiteConfig
+var lastIPFS string
+
 func getSiteConfig() SiteConfig {
 
 	configFilePath := ""
 	if ostype == "windows" {
 		configFilePath = "data\\site\\" + globalAccount.Address + "\\site.json"
 	} else {
-		configFilePath := "./data/site/" + globalAccount.Address + "/site.json"
+		configFilePath = "./data/site/" + globalAccount.Address + "/site.json"
 	}
 	_, err := os.Stat(configFilePath)
 
