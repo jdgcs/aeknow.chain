@@ -531,6 +531,17 @@ func checkHugo() {
 			}
 
 			fmt.Println(string(out))
+			//cp default site config
+			c = "copy data\\site.json  data\\site\\" + globalAccount.Address + "\\"
+			//TODO:Need to be tested
+			fmt.Println(c)
+			cmd = exec.Command("cmd", "/c", c)
+			out, err = cmd.CombinedOutput()
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			fmt.Println(string(out))
 		}
 	} else {
 		hugoDir := "./data/site/" + globalAccount.Address
@@ -555,6 +566,16 @@ func checkHugo() {
 			}
 			//cp theme
 			c = "cp ./data/themes/aeknow/ -r ./data/site/" + globalAccount.Address + "/themes/"
+			fmt.Println(c)
+			cmd = exec.Command("sh", "-c", c)
+			out, err = cmd.CombinedOutput()
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Println(string(out))
+
+			//cp default site config
+			c = "cp ./data/site.json ./data/site/" + globalAccount.Address + "/"
 			fmt.Println(c)
 			cmd = exec.Command("sh", "-c", c)
 			out, err = cmd.CombinedOutput()
