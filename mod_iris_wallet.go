@@ -595,7 +595,19 @@ func configHugo() {
 		}
 
 		fmt.Println(targetFile + "...done.")
-		//
+
+		//config search page
+		srcFile := ".\\data\\search.html"
+		targetFile = ".\\data\\site\\" + globalAccount.Address + "\\content\\search.html"
+		if contents, err := ioutil.ReadFile(srcFile); err == nil {
+			MyContents := strings.Replace(string(contents), "{{.PeerID}}", MyIPFSConfig.Identity.PeerID, -1)
+			err := ioutil.WriteFile(targetFile, []byte(MyContents), 0644)
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			fmt.Println("Read search page failed")
+		}
 
 	} else {
 		//init theme config file
@@ -611,11 +623,24 @@ func configHugo() {
 		//Done:
 		//addstr := string(out)
 
+		//config search page
+		srcFile := "./data/search.html"
+		targetFile = "./data/site/" + globalAccount.Address + "/content/search.html"
+		if contents, err := ioutil.ReadFile(srcFile); err == nil {
+			MyContents := strings.Replace(string(contents), "{{.PeerID}}", MyIPFSConfig.Identity.PeerID, -1)
+			err := ioutil.WriteFile(targetFile, []byte(MyContents), 0644)
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			fmt.Println("Read search page failed")
+		}
+
 	}
 }
 
 func readFileStr(fileName string) string {
-	//TODO: how to config the site
+	//TODONE: how to config the site
 	if contents, err := ioutil.ReadFile(fileName); err == nil {
 		//因为contents是[]byte类型，直接转换成string类型后会多一行空格,需要使用strings.Replace替换换行符
 		//fmt.Println(MyIPFSConfig.Identity.PeerID)
