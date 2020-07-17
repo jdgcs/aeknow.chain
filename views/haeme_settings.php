@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>æKnow - Dashboard</title>
+  <title>æKnow - Settings</title>
   <!-- Tell the browser to be responsive to screen width -->
   <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
   <!-- Bootstrap 3.3.7 -->
@@ -41,51 +41,40 @@
             </div>
             <!-- /.box-header -->
             <div class="box-body">
-              <form role="form">
+              <form role="form"  action="/savesitesetting" method="POST" >
                 <!-- text input -->
                 <div class="form-group">
                   <label>Title</label>
-                  <input type="text" name="title" class="form-control" placeholder="The title of your website ...">
+                  <input type="text" name="title" class="form-control" value="{{.Title}}">
                 </div>
                 
                 <div class="form-group">
                   <label>Subtitle</label>
-                  <input type="text" name="subtitle" class="form-control" placeholder="Sub-title of your website ...">
+                  <input type="text" name="subtitle" class="form-control" value="{{.Subtitle}}">
                 </div>
                 
                <!-- textarea -->
                 <div class="form-group">
                   <label>Site Description</label>
-                  <textarea class="form-control" name="sitedescription" rows="3" placeholder="Short description of your site ..."></textarea>
+                  <textarea class="form-control" name="sitedescription" rows="3" >{{.Description}}</textarea>
                 </div>
               
                <div class="form-group">
                   <label>Author</label>
-                  <input type="text" name="author" class="form-control" placeholder="Name of the author.">
+                  <input type="text" name="author" class="form-control" value="{{.Author}}">
                 </div>  
               
                <div class="form-group">
                   <label>Author Description</label>
-                  <textarea class="form-control" name="authordescription" rows="3" placeholder="Short description of the author ..."></textarea>
+                  <textarea class="form-control" name="authordescription" rows="3" >{{.AuthorDescription}}</textarea>
                 </div>
                 
-                
-                <div class="form-group">
-                  <label for="avatar">Author's Avatar</label>
-                  <input type="file" id="avatar">
-
-                  <p class="help-block">Choose your avatar.</p>
-                </div>
-
+              
                 <!-- select -->
                 <div class="form-group">
                   <label>Theme</label>
-                  <select class="form-control">
-                    <option>aeknow</option>
-                    <option>KnowledgeBase</option>
-                    <option>option 3</option>
-                    <option>option 4</option>
-                    <option>option 5</option>
+                  <select class="form-control" name="theme">
+                    <option>aeknow</option>                   
                   </select>
                 </div>
                

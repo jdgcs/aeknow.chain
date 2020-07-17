@@ -283,7 +283,7 @@ func iCheckLogin(ctx iris.Context) {
 		ctx.ViewData("", myPage)
 		ctx.View("error.php")
 
-	} else {
+	} else { //init the settings
 		globalAccount = *myAccount //作为呈现账号
 		signAccount = myAccount    //作为签名账号
 		IPFS_PATH := "./data/site/" + globalAccount.Address + "/repo/"
@@ -300,7 +300,6 @@ func iCheckLogin(ctx iris.Context) {
 		MySiteConfig = getSiteConfig() //读取网站设置
 		lastIPFS = ""
 		configHugo() //登录成功初始化
-		//go daemonFunc_old(myreq, myres, myenv)
 		go bootIPFS()
 		NodeOnline = true
 
@@ -522,7 +521,6 @@ func checkHugo() {
 			}
 
 			c = "xcopy /e /r /y data\\themes\\aeknow  data\\site\\" + globalAccount.Address + "\\themes\\aeknow"
-			//TODO:Need to be tested
 			fmt.Println(c)
 			cmd = exec.Command("cmd", "/c", c)
 			out, err = cmd.CombinedOutput()
@@ -533,7 +531,6 @@ func checkHugo() {
 			fmt.Println(string(out))
 			//cp default site config
 			c = "copy data\\site.json  data\\site\\" + globalAccount.Address + "\\"
-			//TODO:Need to be tested
 			fmt.Println(c)
 			cmd = exec.Command("cmd", "/c", c)
 			out, err = cmd.CombinedOutput()

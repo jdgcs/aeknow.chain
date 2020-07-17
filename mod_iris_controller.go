@@ -46,6 +46,7 @@ func myiris() {
 	app.Get("/editpage", iEditBlog)
 	app.Get("/delpage", iDelBlog)
 	app.Get("/setsite", iSetSite)
+	app.Post("/savesitesetting", iSaveSetSite)
 
 	app.Get("/goaens", iGoAENS)
 

@@ -108,9 +108,53 @@ func iSetSite(ctx iris.Context) {
 	if !checkLogin(ctx) {
 		return
 	}
-	myPage := PageWallet{Account: globalAccount.Address, PageTitle: "Setting"}
-	ctx.ViewData("", myPage)
+
+	ctx.ViewData("", MySiteConfig)
 	ctx.View("haeme_settings.php")
+}
+
+func iSaveSetSite(ctx iris.Context) {
+	if !checkLogin(ctx) {
+		return
+	}
+	title := ctx.FormValue("title")
+	title = strings.TrimSpace(title)
+	subtitle := ctx.FormValue("subtitle")
+	subtitle = strings.TrimSpace(subtitle)
+	sitedescription := ctx.FormValue("sitedescription")
+	author := ctx.FormValue("author")
+	authordescription := ctx.FormValue("authordescription")
+	theme := ctx.FormValue("theme")
+
+	jsoncontent := `{
+  "Title":"` + title + `", 
+  "Subtitle":"` + subtitle + `",
+  "Description":"` + sitedescription + `",
+  "Author":"` + author + `",
+  "AuthorDescription":"` + authordescription + `",
+  "Theme":"` + theme + `"
+}`
+
+	if ostype == "windows" {
+		//save site config file
+		targetFile := ".\\data\\site\\" + globalAccount.Address + "\\site.json"
+		err := ioutil.WriteFile(targetFile, []byte(jsoncontent), 0644)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		//save site config file
+		targetFile := "./data/site/" + globalAccount.Address + "/site.json"
+		err := ioutil.WriteFile(targetFile, []byte(jsoncontent), 0644)
+		if err != nil {
+			panic(err)
+		}
+	}
+	MySiteConfig = getSiteConfig() //重新读取网站设置
+	configHugo()
+	ctx.HTML("<h1>Site config has been saved.</h1>")
+	//ctx.ViewData("", MySiteConfig)
+	//ctx.View("haeme_settings.php")
 }
 
 //show the defult homepage
