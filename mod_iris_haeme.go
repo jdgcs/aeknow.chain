@@ -263,6 +263,7 @@ description: "` + description + `"
 		panic(err)
 	} else {
 		iBuildSite(ctx)
+		//iBuildSite(ctx)
 	}
 	/*
 		f, err := os.OpenFile(targetFile, os.O_WRONLY|os.O_TRUNC, 0666)
@@ -468,10 +469,14 @@ func iBlogUploadFile(ctx iris.Context) {
 		}
 	}
 }
+
 func iBuildSite(ctx iris.Context) {
 	if !checkLogin(ctx) {
 		return
 	}
+
+	configHugo()
+
 	if ostype == "windows" {
 		fileExec := "..\\..\\..\\bin\\hugo.exe"
 		c := fileExec + " --theme=aeknow"
@@ -496,6 +501,14 @@ func iBuildSite(ctx iris.Context) {
 		strArrayNew = strings.Split(strArrayNew[len(strArrayNew)-2], " ")
 		lastIPFS = strArrayNew[len(strArrayNew)-2]
 
+		//Add last IPFS to the page link.
+		targetFile := ".\\data\\site\\" + globalAccount.Address + "\\lastIPFS"
+		err = ioutil.WriteFile(targetFile, []byte(lastIPFS), 0644)
+		if err != nil {
+			panic(err)
+		}
+
+		//publish IPNS
 		c = "set IPFS_PATH=.\\data\\site\\" + globalAccount.Address + "\\repo\\&& " + fileExec + " name publish " + lastIPFS
 		cmd = exec.Command("cmd", "/c", c)
 		out, err = cmd.Output()
@@ -503,7 +516,7 @@ func iBuildSite(ctx iris.Context) {
 			fmt.Println(err)
 		}
 		fmt.Println(string(out))
-		ctx.HTML(lastIPFS + "have been successfully published to: " + string(out) + "<br /> <br /><a href=" + NodeConfig.IPFSNode + "/ipns/" + MyIPFSConfig.Identity.PeerID + ">My IPNS address: </a><br /><br />" + NodeConfig.IPFSNode + "/ipns/" + MyIPFSConfig.Identity.PeerID)
+		ctx.HTML(lastIPFS + " have been successfully published to: " + string(out) + "<br /> <br /><a href=" + NodeConfig.IPFSNode + "/ipns/" + MyIPFSConfig.Identity.PeerID + ">My IPNS address: </a><br /><br />" + NodeConfig.IPFSNode + "/ipns/" + MyIPFSConfig.Identity.PeerID)
 
 	} else {
 		fileExec := "../../../bin/hugo"
@@ -532,8 +545,14 @@ func iBuildSite(ctx iris.Context) {
 		strArrayNew = strings.Split(strArrayNew[len(strArrayNew)-2], " ")
 		lastIPFS = strArrayNew[len(strArrayNew)-2]
 
-		//c = "/home/ae/dev/go/go-ipfs/cmd/ipfs/ipfs name publish " + hashstr
-		//fileExec = "./ipfs"
+		//Add last IPFS to the page link.
+		targetFile := "./data/site/" + globalAccount.Address + "/lastIPFS"
+		err = ioutil.WriteFile(targetFile, []byte(lastIPFS), 0644)
+		if err != nil {
+			panic(err)
+		}
+
+		//publish IPNS
 		c = "export IPFS_PATH=./data/site/" + globalAccount.Address + "/repo && " + fileExec + " name publish " + lastIPFS
 		fmt.Println(c)
 		cmd = exec.Command("sh", "-c", c)
@@ -542,12 +561,10 @@ func iBuildSite(ctx iris.Context) {
 			fmt.Println(err)
 		}
 		fmt.Println(string(out))
-		ctx.HTML(lastIPFS + "have been successfully published to: " + string(out) + "<br /> <br /><a href=" + NodeConfig.IPFSNode + "/ipns/" + MyIPFSConfig.Identity.PeerID + ">My IPNS address: </a><br /><br />" + NodeConfig.IPFSNode + "/ipns/" + MyIPFSConfig.Identity.PeerID)
-		//myapi, err := cmdenv.GetApi(myenv, myreq)
-		//fmt.Println(MyIPFSConfig.Identity.PeerID)
+		ctx.HTML(lastIPFS + " have been successfully published to: " + string(out) + "<br /> <br /><a href=" + NodeConfig.IPFSNode + "/ipns/" + MyIPFSConfig.Identity.PeerID + ">My IPNS address: </a><br /><br />" + NodeConfig.IPFSNode + "/ipns/" + MyIPFSConfig.Identity.PeerID)
 	}
 
-	//TODO:Different users' site and Windows
+	//DONE:Different users' site and Windows
 }
 func iUpdateStatic(ctx iris.Context) {
 	if !checkLogin(ctx) {

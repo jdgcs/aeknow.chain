@@ -2,11 +2,13 @@ package main
 
 import (
 	//"encoding/json"
+	"bufio"
 	crypto_rand "crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"math/big"
 	"os"
@@ -643,14 +645,52 @@ func readFileStr(fileName string) string {
 	//TODONE: how to config the site
 	if contents, err := ioutil.ReadFile(fileName); err == nil {
 		//因为contents是[]byte类型，直接转换成string类型后会多一行空格,需要使用strings.Replace替换换行符
-		//fmt.Println(MyIPFSConfig.Identity.PeerID)
 		MyContents := strings.Replace(string(contents), "{{.SiteTitle}}", MySiteConfig.Title, -1)
 		MyContents = strings.Replace(MyContents, "{{.Author}}", MySiteConfig.Author, -1)
 		MyContents = strings.Replace(MyContents, "{{.AuthorDescription}}", MySiteConfig.AuthorDescription, -1)
 		MyContents = strings.Replace(MyContents, "{{.Subtitle}}", MySiteConfig.Subtitle, -1)
 		MyContents = strings.Replace(MyContents, "{{.SiteDescription}}", MySiteConfig.Description, -1)
+		//get lastIPFS
+		myLastIPFS := getLastIPFS()
+		MyContents = strings.Replace(MyContents, "{{.LastIPFS}}", myLastIPFS, -1)
 
+		//update user's IPFS peerid
+		MyContents = strings.Replace(MyContents, "{{.Account}}", globalAccount.Address, -1)
 		return strings.Replace(MyContents, "{{.Baseurl}}", NodeConfig.IPFSNode+"/ipns/"+MyIPFSConfig.Identity.PeerID+"/", -1)
+		//return strings.Replace(MyContents, "{{.Baseurl}}", NodeConfig.IPFSNode+"/ipfs/"+myLastIPFS+"/", -1)
+
+	}
+
+	return ""
+}
+
+func getLastIPFS() string {
+	fileName := ""
+	if ostype == "windows" {
+		fileName = "data\\site\\" + globalAccount.Address + "\\lastIPFS"
+	} else {
+		fileName = "./data/site/" + globalAccount.Address + "/lastIPFS"
+	}
+
+	if FileExist(fileName) {
+		fi, err := os.Open(fileName)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err)
+			return ""
+		}
+		defer fi.Close()
+
+		br := bufio.NewReader(fi)
+
+		for {
+			a, _, c := br.ReadLine()
+			if c == io.EOF {
+				break
+			}
+			return string(a)
+		}
+	} else {
+		return ""
 	}
 	return ""
 }
