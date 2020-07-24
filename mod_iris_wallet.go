@@ -304,7 +304,7 @@ func iCheckLogin(ctx iris.Context) {
 		configHugo() //登录成功初始化
 		go bootIPFS()
 		NodeOnline = true
-
+		go ConnetDefaultNodes()
 		// Authentication goes here
 		// ...
 

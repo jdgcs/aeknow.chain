@@ -68,6 +68,7 @@ type AeknowConfig struct {
 	PublicNode string
 	APINode    string
 	IPFSNode   string
+	IPFSAPI    string
 	LocalWeb   string
 }
 

@@ -10,6 +10,8 @@ import (
 	"os/exec"
 	"reflect"
 	"runtime"
+	"strings"
+
 	//"sync"
 	"time"
 
@@ -243,6 +245,20 @@ func httpGet(url string) string {
 	return string(body)
 }
 
+func IPFSAPIPost(data string, postfunc string) string {
+	request, _ := http.NewRequest("POST", NodeConfig.IPFSAPI+"/api/"+postfunc, strings.NewReader(data))
+	request.Header.Add("content-type", "application/json")
+	resp, err := http.DefaultClient.Do(request)
+	if err != nil {
+		fmt.Printf("post data error:%v\n", err)
+		return "post data error"
+	} else {
+		//fmt.Println("post a data successful.")
+		respBody, _ := ioutil.ReadAll(resp.Body)
+		fmt.Printf("response data:%v\n", string(respBody))
+		return string(respBody)
+	}
+}
 func calcAENSFeeStr(aensname string) string {
 	if len(aensname) == 7 {
 		return "570.3"
@@ -369,22 +385,24 @@ func Substr(str string, start, length int) string {
 
 func ConnetDefaultNodes() {
 	//set test ipfs nodes for global and CN
-	addrs := []string{"/ip4/104.156.239.14/tcp/4001/p2p/QmXZUVYs6SNHNJqFNwTKVRsRB2Lom5N2RtfH8T8CT3sFfU", "/ip4/111.231.110.42/tcp/4001/p2p/QmXiowBAKzjKXjkRKWJRFZXkS6BsKbYXgXHmoWp4hSSCsD"}
-
+	seednode1 := "/ip4/104.156.239.14/tcp/4001/p2p/QmXZUVYs6SNHNJqFNwTKVRsRB2Lom5N2RtfH8T8CT3sFfU"
+	seednode2 := "/ip4/111.231.110.42/tcp/4001/p2p/QmXiowBAKzjKXjkRKWJRFZXkS6BsKbYXgXHmoWp4hSSCsD"
 	//Do connect once firstly
 	time.Sleep(10 * time.Second)
-	DoConnect(addrs)
+	DoConnect(seednode1)
+	DoConnect(seednode2)
 
 	//Reconnect continuously every 30 secs(?)
 	for {
 		time.Sleep(30 * time.Second)
 		if NodeOnline {
 			fmt.Println("Connect to seeds...")
-			DoConnect(addrs)
+			DoConnect(seednode1)
+			DoConnect(seednode2)
 		}
 	}
 }
 
-func DoConnect(addrs []string) {
-
+func DoConnect(addr string) {
+	IPFSAPIPost("", "v0/swarm/connect?arg="+addr)
 }
