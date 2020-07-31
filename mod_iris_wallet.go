@@ -317,7 +317,7 @@ func iCheckLogin(ctx iris.Context) {
 func bootIPFS() { //boot IPFS independently
 	if ostype == "windows" {
 		fileExec := ".\\bin\\ipfs.exe"
-		c := "set IPFS_PATH=data\\site\\" + globalAccount.Address + "\\repo\\&& " + fileExec + " daemon"
+		c := "set IPFS_PATH=data\\site\\" + globalAccount.Address + "\\repo\\&& " + fileExec + " daemon --enable-pubsub-experiment"
 		fmt.Println(c)
 		cmd := exec.Command("cmd", "/c", c)
 		out, _ := cmd.Output()
@@ -326,7 +326,7 @@ func bootIPFS() { //boot IPFS independently
 	} else {
 		fileExec := "./bin/ipfs"
 
-		c := "export IPFS_PATH=./data/site/" + globalAccount.Address + "/repo/&& " + fileExec + " daemon"
+		c := "export IPFS_PATH=./data/site/" + globalAccount.Address + "/repo/&& " + fileExec + " daemon --enable-pubsub-experiment"
 		cmd := exec.Command("sh", "-c", c)
 		fmt.Println(c)
 		out, _ := cmd.Output()

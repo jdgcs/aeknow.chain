@@ -2,6 +2,8 @@ package main
 
 import (
 	//"context"
+	"bytes"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -388,10 +390,10 @@ func ConnetDefaultNodes() {
 	seednode1 := "/ip4/104.156.239.14/tcp/4001/p2p/QmXZUVYs6SNHNJqFNwTKVRsRB2Lom5N2RtfH8T8CT3sFfU"
 	seednode2 := "/ip4/111.231.110.42/tcp/4001/p2p/QmXiowBAKzjKXjkRKWJRFZXkS6BsKbYXgXHmoWp4hSSCsD"
 	//Do connect once firstly
-	time.Sleep(10 * time.Second)
+	time.Sleep(20 * time.Second)
 	DoConnect(seednode1)
 	DoConnect(seednode2)
-
+	go ReadPubsub("update") //listening update channel
 	//Reconnect continuously every 30 secs(?)
 	for {
 		time.Sleep(30 * time.Second)
@@ -405,4 +407,50 @@ func ConnetDefaultNodes() {
 
 func DoConnect(addr string) {
 	IPFSAPIPost("", "v0/swarm/connect?arg="+addr)
+}
+
+func PubMSGTo(msg string, topic string) {
+	//"http://127.0.0.1:5001/api/v0/pubsub/pub?arg=<topic>&arg=<data>"
+	IPFSAPIPost("", "v0/pubsub/pub?arg="+topic+"&arg="+msg)
+}
+
+func sigMSG(msg string) string {
+	//mysignAccount :=account.FromHexString(signAccount.Sign())
+	signed := base64.StdEncoding.EncodeToString(signAccount.Sign([]byte(msg)))
+	fmt.Println(signed)
+	return ":SIG:" + signed
+}
+
+var (
+	httpClient *http.Client
+)
+
+func ReadPubsub(topic string) {
+	fmt.Println("Start listening..." + topic)
+	//curl -X POST "http://127.0.0.1:5001/api/v0/pubsub/sub?arg=<topic>&discover=<value>"
+	var endPoint string = "http://127.0.0.1:5001/api/v0/pubsub/sub?arg=" + topic
+
+	req, err := http.NewRequest("POST", endPoint, bytes.NewBuffer([]byte("")))
+	if err != nil {
+		fmt.Println("Error Occured. %+v", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	fmt.Println(endPoint)
+	// use httpClient to send request
+	response, err := httpClient.Do(req)
+	if err != nil && response == nil {
+		fmt.Println("Error sending request to API endpoint. %+v", err)
+	} else {
+		// Close the connection to reuse it
+		defer response.Body.Close()
+
+		// Let's check if the work actually is done
+		// We have seen inconsistencies even when we get 200 OK response
+		body, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			fmt.Println("Couldn't parse response body. %+v", err)
+		}
+
+		fmt.Println("Response Body:", string(body))
+	}
 }

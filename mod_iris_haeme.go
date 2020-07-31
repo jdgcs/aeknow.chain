@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -516,6 +517,12 @@ func iBuildSite(ctx iris.Context) {
 			fmt.Println(err)
 		}
 		fmt.Println(string(out))
+
+		//publish to pubsub
+		updateMSG := globalAccount.Address + ":IPFS:" + lastIPFS + ":IPNS:" + MyIPFSConfig.Identity.PeerID
+		updateMSG = updateMSG + sigMSG(updateMSG)
+		updateMSG = base64.StdEncoding.EncodeToString([]byte(updateMSG))
+		PubMSGTo(updateMSG, "update")
 		ctx.HTML(lastIPFS + " have been successfully published to: " + string(out) + "<br /> <br /><a href=" + NodeConfig.IPFSNode + "/ipns/" + MyIPFSConfig.Identity.PeerID + ">My IPNS address: </a><br /><br />" + NodeConfig.IPFSNode + "/ipns/" + MyIPFSConfig.Identity.PeerID)
 
 	} else {
@@ -561,6 +568,11 @@ func iBuildSite(ctx iris.Context) {
 			fmt.Println(err)
 		}
 		fmt.Println(string(out))
+		//publish to pubsub
+		updateMSG := globalAccount.Address + ":IPFS:" + lastIPFS + ":IPNS:" + MyIPFSConfig.Identity.PeerID
+		updateMSG = updateMSG + sigMSG(updateMSG)
+		updateMSG = base64.StdEncoding.EncodeToString([]byte(updateMSG))
+		PubMSGTo(updateMSG, "update")
 		ctx.HTML(lastIPFS + " have been successfully published to: " + string(out) + "<br /> <br /><a href=" + NodeConfig.IPFSNode + "/ipns/" + MyIPFSConfig.Identity.PeerID + ">My IPNS address: </a><br /><br />" + NodeConfig.IPFSNode + "/ipns/" + MyIPFSConfig.Identity.PeerID)
 	}
 
