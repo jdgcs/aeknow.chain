@@ -2,7 +2,7 @@ package main
 
 import (
 	//"context"
-	"bytes"
+	//"bytes"
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
@@ -21,6 +21,8 @@ import (
 	aeconfig "github.com/aeternity/aepp-sdk-go/v7/config"
 	"github.com/aeternity/aepp-sdk-go/v7/naet"
 	"github.com/aeternity/aepp-sdk-go/v7/transactions"
+
+	ipfsshell "github.com/ipfs/go-ipfs-api"
 )
 
 const (
@@ -421,36 +423,14 @@ func sigMSG(msg string) string {
 	return ":SIG:" + signed
 }
 
-var (
-	httpClient *http.Client
-)
-
 func ReadPubsub(topic string) {
 	fmt.Println("Start listening..." + topic)
 	//curl -X POST "http://127.0.0.1:5001/api/v0/pubsub/sub?arg=<topic>&discover=<value>"
-	var endPoint string = "http://127.0.0.1:5001/api/v0/pubsub/sub?arg=" + topic
-
-	req, err := http.NewRequest("POST", endPoint, bytes.NewBuffer([]byte("")))
-	if err != nil {
-		fmt.Println("Error Occured. %+v", err)
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	fmt.Println(endPoint)
-	// use httpClient to send request
-	response, err := httpClient.Do(req)
-	if err != nil && response == nil {
-		fmt.Println("Error sending request to API endpoint. %+v", err)
-	} else {
-		// Close the connection to reuse it
-		defer response.Body.Close()
-
-		// Let's check if the work actually is done
-		// We have seen inconsistencies even when we get 200 OK response
-		body, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			fmt.Println("Couldn't parse response body. %+v", err)
-		}
-
-		fmt.Println("Response Body:", string(body))
+	sh := ipfsshell.NewShell(NodeConfig.IPFSAPI)
+	sub, _ := sh.PubSubSubscribe(topic)
+	for {
+		r, _ := sub.Next()
+		fmt.Println(r.From)
+		fmt.Println(string(r.Data))
 	}
 }

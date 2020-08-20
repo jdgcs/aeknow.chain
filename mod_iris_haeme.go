@@ -573,6 +573,7 @@ func iBuildSite(ctx iris.Context) {
 		updateMSG = updateMSG + sigMSG(updateMSG)
 		updateMSG = base64.StdEncoding.EncodeToString([]byte(updateMSG))
 		PubMSGTo(updateMSG, "update")
+
 		ctx.HTML(lastIPFS + " have been successfully published to: " + string(out) + "<br /> <br /><a href=" + NodeConfig.IPFSNode + "/ipns/" + MyIPFSConfig.Identity.PeerID + ">My IPNS address: </a><br /><br />" + NodeConfig.IPFSNode + "/ipns/" + MyIPFSConfig.Identity.PeerID)
 	}
 
