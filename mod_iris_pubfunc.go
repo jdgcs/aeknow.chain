@@ -3,8 +3,11 @@ package main
 import (
 	//"context"
 	//"bytes"
+	crypto_rand "crypto/rand"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/big"
 	"net/http"
@@ -16,13 +19,19 @@ import (
 
 	//"sync"
 	"time"
-
+	//ae
 	"github.com/aeternity/aepp-sdk-go/v7/account"
+	aebinary "github.com/aeternity/aepp-sdk-go/v7/binary"
 	aeconfig "github.com/aeternity/aepp-sdk-go/v7/config"
 	"github.com/aeternity/aepp-sdk-go/v7/naet"
 	"github.com/aeternity/aepp-sdk-go/v7/transactions"
 
+	//ipfs
 	ipfsshell "github.com/ipfs/go-ipfs-api"
+	//crypt
+	//"github.com/jdgcs/ed25519"
+	"github.com/jdgcs/ed25519/extra25519"
+	"golang.org/x/crypto/nacl/box"
 )
 
 const (
@@ -419,11 +428,112 @@ func PubMSGTo(msg string, topic string) {
 func sigMSG(msg string) string {
 	//mysignAccount :=account.FromHexString(signAccount.Sign())
 	signed := base64.StdEncoding.EncodeToString(signAccount.Sign([]byte(msg)))
-	fmt.Println(signed)
+	fmt.Println("signed:" + signed)
+	fmt.Println("SignKey:" + signAccount.SigningKeyToHexString())
+	//check ctypt with privkey
+	fmt.Println("START")
+	var recipientPublicKeySlice [32]byte
+	var recipientPrivateKeySlice [64]byte
+	recipientPublicKey, recipientPrivateKey, err := box.GenerateKey(crypto_rand.Reader)
+	if err != nil {
+		panic(err)
+	}
+
+	//pubkey
+	copy(recipientPublicKeySlice[0:32], signAccount.SigningKey)
+	myrecipientPublicKey := &recipientPublicKeySlice
+	extra25519.PublicKeyToCurve25519(recipientPublicKey, myrecipientPublicKey)
+
+	//privk
+	copy(recipientPrivateKeySlice[0:64], signAccount.SigningKey)
+	myrecipientPrivateKey := &recipientPrivateKeySlice
+	extra25519.PrivateKeyToCurve25519(recipientPrivateKey, myrecipientPrivateKey)
+	//mypkk := myrecipientPrivateKey
+	fmt.Println("1")
+	//encrypt
+	var nonce [24]byte
+	if _, err = io.ReadFull(crypto_rand.Reader, nonce[:]); err != nil {
+		panic(err)
+	}
+	testmsg := []byte("既然我们用这条曲线能实现签名运算，那还有别的运算能做吗？答案是肯定的。Daniel J. Bernstein使用这个曲线设计了一个ECDH算法，名为X25519（也叫做Curve25519）。这个算法的巧妙之处在于，仅利用点的横坐标来计算和交换密钥。")
+	encrypted := box.Seal(nonce[:], testmsg, &nonce, recipientPublicKey, recipientPrivateKey)
+	fmt.Println("Encrypted:" + hex.EncodeToString(encrypted))
+
+	fmt.Println("2")
+	//decrypt
+	var decryptNonce [24]byte
+	copy(decryptNonce[:], encrypted[:24])
+	decrypted, ok := box.Open(nil, encrypted[24:], &decryptNonce, recipientPublicKey, recipientPrivateKey)
+	if !ok {
+		panic("decryption error")
+	}
+	fmt.Println("Decrypted:" + string(decrypted))
+	fmt.Println("END")
+
+	out, _ := aebinary.Decode("ak_fCCw1JEkvXdztZxk8FRGNAkvmArhVeow89e64yX4AxbCPrVh5")
+	fmt.Println("account:" + hex.EncodeToString(out))
+	sealedMSG := SealMSGTo("ak_fCCw1JEkvXdztZxk8FRGNAkvmArhVeow89e64yX4AxbCPrVh5", "Hello, world!")
+	fmt.Println("Seal:" + sealedMSG)
+	fmt.Println("Open:" + OpenMSGFrom("ak_fCCw1JEkvXdztZxk8FRGNAkvmArhVeow89e64yX4AxbCPrVh5", sealedMSG))
+
 	return ":SIG:" + signed
 }
 
+func SealMSGTo(ToAddress, Message string) string {
+	recipientPublicKey, sealPrivateKey, _ := box.GenerateKey(crypto_rand.Reader) //assume a key
+	toPublicKey, _ := aebinary.Decode(ToAddress)
+
+	var privateKeySlice [64]byte
+	var publicKeySlice [32]byte
+
+	copy(privateKeySlice[0:64], signAccount.SigningKey)
+	myrecipientPrivateKey := &privateKeySlice
+	extra25519.PrivateKeyToCurve25519(sealPrivateKey, myrecipientPrivateKey)
+
+	copy(publicKeySlice[0:32], toPublicKey)
+	myrecipientPublicKey := &publicKeySlice
+	extra25519.PublicKeyToCurve25519(recipientPublicKey, myrecipientPublicKey)
+
+	byteMSG := []byte(Message)
+
+	var nonce [24]byte
+	_, err := io.ReadFull(crypto_rand.Reader, nonce[:])
+
+	if err != nil {
+		panic(err)
+	}
+	return base64.StdEncoding.EncodeToString(box.Seal(nonce[:], byteMSG, &nonce, recipientPublicKey, sealPrivateKey))
+}
+
+func OpenMSGFrom(FromAddress, Message string) string {
+	senderPublicKey, openPrivateKey, _ := box.GenerateKey(crypto_rand.Reader) //assume a key
+
+	fromPublicKey, _ := aebinary.Decode(FromAddress)
+
+	var privateKeySlice [64]byte
+	var publicKeySlice [32]byte
+
+	copy(privateKeySlice[0:64], signAccount.SigningKey)
+	myrecipientPrivateKey := &privateKeySlice
+	extra25519.PrivateKeyToCurve25519(openPrivateKey, myrecipientPrivateKey)
+
+	copy(publicKeySlice[0:32], fromPublicKey)
+	myrecipientPublicKey := &publicKeySlice
+	extra25519.PublicKeyToCurve25519(senderPublicKey, myrecipientPublicKey)
+
+	encrypted, _ := base64.StdEncoding.DecodeString(Message)
+	var decryptNonce [24]byte
+	copy(decryptNonce[:], encrypted[:24])
+	decrypted, ok := box.Open(nil, encrypted[24:], &decryptNonce, senderPublicKey, openPrivateKey)
+	if !ok {
+		panic("decryption error")
+	}
+
+	return string(decrypted)
+}
+
 func ReadPubsub(topic string) {
+	//Use IPFS-API
 	fmt.Println("Start listening..." + topic)
 	//curl -X POST "http://127.0.0.1:5001/api/v0/pubsub/sub?arg=<topic>&discover=<value>"
 	sh := ipfsshell.NewShell(NodeConfig.IPFSAPI)
@@ -431,6 +541,44 @@ func ReadPubsub(topic string) {
 	for {
 		r, _ := sub.Next()
 		fmt.Println(r.From)
-		fmt.Println(string(r.Data))
+		decodeBytes, _ := base64.StdEncoding.DecodeString(string(r.Data))
+		plainStr := string(decodeBytes)
+
+		if msgVerify(plainStr) {
+			fmt.Println("Verified:" + string(decodeBytes))
+		} else {
+			fmt.Println("failed")
+		}
+
 	}
+}
+
+func msgVerify(message string) bool {
+	if strings.Contains(message, ":SIG:") {
+		splitted := strings.Split(message, ":SIG:")
+		themessage := splitted[0]
+
+		theSig, _ := base64.StdEncoding.DecodeString(splitted[1])
+		//theSig := splitted[1]
+
+		splitted = strings.Split(themessage, ":")
+		sigAccount := splitted[0]
+
+		fmt.Println("ACC:" + sigAccount)
+		fmt.Println("MSG:" + themessage)
+		//fmt.Println("SIG:" + string(theSig))
+
+		sigVerify, err := account.Verify(sigAccount, []byte(themessage), theSig)
+
+		if sigVerify {
+			return true
+		} else {
+			fmt.Println(err)
+			return false
+		}
+	} else {
+		return false
+	}
+
+	return false
 }
