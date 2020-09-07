@@ -5,7 +5,8 @@ import (
 	//"bytes"
 	crypto_rand "crypto/rand"
 	"encoding/base64"
-	"encoding/hex"
+
+	//"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -408,10 +409,12 @@ func ConnetDefaultNodes() {
 	//Reconnect continuously every 30 secs(?)
 	for {
 		time.Sleep(30 * time.Second)
-		if NodeOnline {
+		if IsNodeOnline() {
 			fmt.Println("Connect to seeds...")
 			DoConnect(seednode1)
 			DoConnect(seednode2)
+		} else {
+			break
 		}
 	}
 }
@@ -428,53 +431,6 @@ func PubMSGTo(msg string, topic string) {
 func sigMSG(msg string) string {
 	//mysignAccount :=account.FromHexString(signAccount.Sign())
 	signed := base64.StdEncoding.EncodeToString(signAccount.Sign([]byte(msg)))
-	fmt.Println("signed:" + signed)
-	fmt.Println("SignKey:" + signAccount.SigningKeyToHexString())
-	//check ctypt with privkey
-	fmt.Println("START")
-	var recipientPublicKeySlice [32]byte
-	var recipientPrivateKeySlice [64]byte
-	recipientPublicKey, recipientPrivateKey, err := box.GenerateKey(crypto_rand.Reader)
-	if err != nil {
-		panic(err)
-	}
-
-	//pubkey
-	copy(recipientPublicKeySlice[0:32], signAccount.SigningKey)
-	myrecipientPublicKey := &recipientPublicKeySlice
-	extra25519.PublicKeyToCurve25519(recipientPublicKey, myrecipientPublicKey)
-
-	//privk
-	copy(recipientPrivateKeySlice[0:64], signAccount.SigningKey)
-	myrecipientPrivateKey := &recipientPrivateKeySlice
-	extra25519.PrivateKeyToCurve25519(recipientPrivateKey, myrecipientPrivateKey)
-	//mypkk := myrecipientPrivateKey
-	fmt.Println("1")
-	//encrypt
-	var nonce [24]byte
-	if _, err = io.ReadFull(crypto_rand.Reader, nonce[:]); err != nil {
-		panic(err)
-	}
-	testmsg := []byte("既然我们用这条曲线能实现签名运算，那还有别的运算能做吗？答案是肯定的。Daniel J. Bernstein使用这个曲线设计了一个ECDH算法，名为X25519（也叫做Curve25519）。这个算法的巧妙之处在于，仅利用点的横坐标来计算和交换密钥。")
-	encrypted := box.Seal(nonce[:], testmsg, &nonce, recipientPublicKey, recipientPrivateKey)
-	fmt.Println("Encrypted:" + hex.EncodeToString(encrypted))
-
-	fmt.Println("2")
-	//decrypt
-	var decryptNonce [24]byte
-	copy(decryptNonce[:], encrypted[:24])
-	decrypted, ok := box.Open(nil, encrypted[24:], &decryptNonce, recipientPublicKey, recipientPrivateKey)
-	if !ok {
-		panic("decryption error")
-	}
-	fmt.Println("Decrypted:" + string(decrypted))
-	fmt.Println("END")
-
-	out, _ := aebinary.Decode("ak_fCCw1JEkvXdztZxk8FRGNAkvmArhVeow89e64yX4AxbCPrVh5")
-	fmt.Println("account:" + hex.EncodeToString(out))
-	sealedMSG := SealMSGTo("ak_fCCw1JEkvXdztZxk8FRGNAkvmArhVeow89e64yX4AxbCPrVh5", "Hello, world!")
-	fmt.Println("Seal:" + sealedMSG)
-	fmt.Println("Open:" + OpenMSGFrom("ak_fCCw1JEkvXdztZxk8FRGNAkvmArhVeow89e64yX4AxbCPrVh5", sealedMSG))
 
 	return ":SIG:" + signed
 }
@@ -539,15 +495,23 @@ func ReadPubsub(topic string) {
 	sh := ipfsshell.NewShell(NodeConfig.IPFSAPI)
 	sub, _ := sh.PubSubSubscribe(topic)
 	for {
-		r, _ := sub.Next()
-		fmt.Println(r.From)
-		decodeBytes, _ := base64.StdEncoding.DecodeString(string(r.Data))
-		plainStr := string(decodeBytes)
+		if IsNodeOnline() {
+			r, _ := sub.Next()
+			if IsNodeOnline() {
+				fmt.Println(r.From)
+				decodeBytes, _ := base64.StdEncoding.DecodeString(string(r.Data))
+				plainStr := string(decodeBytes)
 
-		if msgVerify(plainStr) {
-			fmt.Println("Verified:" + string(decodeBytes))
+				if msgVerify(plainStr) {
+					fmt.Println("Verified:" + string(decodeBytes))
+				} else {
+					fmt.Println("failed")
+				}
+			} else {
+				break
+			}
 		} else {
-			fmt.Println("failed")
+			//fmt.Println("IPFS offline.")
 		}
 
 	}

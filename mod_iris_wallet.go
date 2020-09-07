@@ -17,6 +17,8 @@ import (
 	"strconv"
 	"strings"
 
+	//"time"
+
 	"github.com/aeternity/aepp-sdk-go/v7/account"
 	aeconfig "github.com/aeternity/aepp-sdk-go/v7/config"
 	"github.com/aeternity/aepp-sdk-go/v7/naet"
@@ -163,7 +165,8 @@ func iLogOut(ctx iris.Context) {
 	//
 	globalAccount.Address = ""
 	session := sess.Start(ctx)
-
+	NodeOnline = false
+	loginoutFile()
 	//notifyStopping()
 	//aerepo.Close() //close the repo
 
@@ -176,7 +179,7 @@ func iLogOut(ctx iris.Context) {
 	ctx.Redirect("/")
 	//stop current daemon
 	//<-myreq.Context.Done()
-
+	//time.Sleep(1 * time.Second)
 	go killIPFS()
 }
 
@@ -304,6 +307,7 @@ func iCheckLogin(ctx iris.Context) {
 		configHugo() //登录成功初始化
 		go bootIPFS()
 		NodeOnline = true
+		loginedFile()
 		go ConnetDefaultNodes()
 		// Authentication goes here
 		// ...
@@ -314,6 +318,60 @@ func iCheckLogin(ctx iris.Context) {
 
 }
 
+func loginedFile() {
+	loginedFile := ""
+	if ostype == "windows" {
+		loginedFile = ".\\data\\online.lock"
+	} else {
+		loginedFile = "./data/online.lock"
+	}
+
+	if FileExist(loginedFile) {
+	} else {
+		err := ioutil.WriteFile(loginedFile, []byte("ONLINE"), 0644)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func loginoutFile() {
+	loginedFile := ""
+	if ostype == "windows" {
+		loginedFile = ".\\data\\online.lock"
+	} else {
+		loginedFile = "./data/online.lock"
+	}
+
+	if FileExist(loginedFile) {
+		err := os.Remove(loginedFile)
+
+		if err != nil {
+			// 删除失败
+			fmt.Println("logout failed")
+
+		} else {
+			// 删除成功
+			fmt.Println("logout")
+		}
+	}
+}
+
+func IsNodeOnline() bool {
+	loginedFile := ""
+	if ostype == "windows" {
+		loginedFile = ".\\data\\online.lock"
+	} else {
+		loginedFile = "./data/online.lock"
+	}
+
+	if FileExist(loginedFile) {
+		fmt.Println("online")
+		return true
+	}
+	fmt.Println("offline")
+	return false
+}
 func bootIPFS() { //boot IPFS independently
 	if ostype == "windows" {
 		fileExec := ".\\bin\\ipfs.exe"
