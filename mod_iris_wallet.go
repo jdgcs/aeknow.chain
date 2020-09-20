@@ -357,21 +357,6 @@ func loginoutFile() {
 	}
 }
 
-func IsNodeOnline() bool {
-	loginedFile := ""
-	if ostype == "windows" {
-		loginedFile = ".\\data\\online.lock"
-	} else {
-		loginedFile = "./data/online.lock"
-	}
-
-	if FileExist(loginedFile) {
-		fmt.Println("online")
-		return true
-	}
-	fmt.Println("offline")
-	return false
-}
 func bootIPFS() { //boot IPFS independently
 	if ostype == "windows" {
 		fileExec := ".\\bin\\ipfs.exe"

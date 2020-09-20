@@ -402,7 +402,7 @@ func ConnetDefaultNodes() {
 	seednode1 := "/ip4/104.156.239.14/tcp/4001/p2p/QmXZUVYs6SNHNJqFNwTKVRsRB2Lom5N2RtfH8T8CT3sFfU"
 	seednode2 := "/ip4/111.231.110.42/tcp/4001/p2p/QmXiowBAKzjKXjkRKWJRFZXkS6BsKbYXgXHmoWp4hSSCsD"
 	//Do connect once firstly
-	time.Sleep(20 * time.Second)
+	time.Sleep(10 * time.Second)
 	DoConnect(seednode1)
 	DoConnect(seednode2)
 	go ReadPubsub("update") //listening update channel
@@ -503,9 +503,10 @@ func ReadPubsub(topic string) {
 				plainStr := string(decodeBytes)
 
 				if msgVerify(plainStr) {
-					fmt.Println("Verified:" + string(decodeBytes))
+					//fmt.Println("Verified:" + string(decodeBytes))
+					processReceivedUpdateMSG(plainStr)
 				} else {
-					fmt.Println("failed")
+					fmt.Println("Verify failed")
 				}
 			} else {
 				break
@@ -528,8 +529,8 @@ func msgVerify(message string) bool {
 		splitted = strings.Split(themessage, ":")
 		sigAccount := splitted[0]
 
-		fmt.Println("ACC:" + sigAccount)
-		fmt.Println("MSG:" + themessage)
+		//fmt.Println("ACC:" + sigAccount)
+		//fmt.Println("MSG:" + themessage)
 		//fmt.Println("SIG:" + string(theSig))
 
 		sigVerify, err := account.Verify(sigAccount, []byte(themessage), theSig)
@@ -544,5 +545,51 @@ func msgVerify(message string) bool {
 		return false
 	}
 
+	return false
+}
+
+func processReceivedUpdateMSG(message string) {
+	//Process the update message
+	splitted := strings.Split(message, ":SIG:")
+	themessage := splitted[0]
+	splitted = strings.Split(themessage, ":")
+	sigAccount := splitted[0]
+	IPFSAddress := splitted[2]
+	IPNSAddress := splitted[4]
+
+	if IsDoPIN(sigAccount, IPFSAddress, IPNSAddress) {
+		DoPIN(IPFSAddress)
+	}
+}
+
+func IsDoPIN(sigAccount, IPFSAddress, IPNSAddress string) bool {
+	//TODO:todo
+	return true
+}
+
+func DoPIN(IPFSAddress string) {
+	sh := ipfsshell.NewShell(NodeConfig.IPFSAPI)
+	err := sh.Pin(IPFSAddress)
+	if err != nil {
+		fmt.Println("Failed:" + IPFSAddress)
+	} else {
+		fmt.Println("Pinned:" + IPFSAddress)
+	}
+}
+
+func IsNodeOnline() bool {
+	//check the node file
+	loginedFile := ""
+	if ostype == "windows" {
+		loginedFile = ".\\data\\online.lock"
+	} else {
+		loginedFile = "./data/online.lock"
+	}
+
+	if FileExist(loginedFile) {
+		fmt.Println("online")
+		return true
+	}
+	fmt.Println("offline")
 	return false
 }
