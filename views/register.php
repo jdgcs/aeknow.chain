@@ -48,6 +48,10 @@
         <span class="glyphicon glyphicon-lock form-control-feedback"></span>
       </div>
       
+      <div class="form-group has-feedback">
+        <input type="text" name="alias" class="form-control" placeholder="Account name">
+        <span class="glyphicon glyphicon-user form-control-feedback"></span>
+      </div>
            
       <div class="row">
         <div class="col-xs-8">

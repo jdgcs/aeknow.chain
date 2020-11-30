@@ -399,13 +399,13 @@ func Substr(str string, start, length int) string {
 
 func ConnetDefaultNodes() {
 	//set test ipfs nodes for global and CN
-	seednode1 := "/ip4/104.156.239.14/tcp/4001/p2p/QmXZUVYs6SNHNJqFNwTKVRsRB2Lom5N2RtfH8T8CT3sFfU"
+	seednode1 := "/ip4/104.156.239.14/tcp/4001/p2p/12D3KooWGJcM7ZGZGAQm7y1yGxr7Q8WKRRPYvvGM7CH4KQv7zfkY"
 	seednode2 := "/ip4/111.231.110.42/tcp/4001/p2p/QmXiowBAKzjKXjkRKWJRFZXkS6BsKbYXgXHmoWp4hSSCsD"
 	//Do connect once firstly
 	time.Sleep(10 * time.Second)
 	DoConnect(seednode1)
 	DoConnect(seednode2)
-	go ReadPubsub("update") //listening update channel
+	//go ReadPubsub("update") //listening update channel
 	//Reconnect continuously every 30 secs(?)
 	for {
 		time.Sleep(30 * time.Second)
@@ -435,14 +435,15 @@ func sigMSG(msg string) string {
 	return ":SIG:" + signed
 }
 
-func SealMSGTo(ToAddress, Message string) string {
+func SealMSGTo(ToAddress, Message string, SealKey *account.Account) string {
 	recipientPublicKey, sealPrivateKey, _ := box.GenerateKey(crypto_rand.Reader) //assume a key
 	toPublicKey, _ := aebinary.Decode(ToAddress)
 
 	var privateKeySlice [64]byte
 	var publicKeySlice [32]byte
 
-	copy(privateKeySlice[0:64], signAccount.SigningKey)
+	//copy(privateKeySlice[0:64], signAccount.SigningKey)
+	copy(privateKeySlice[0:64], SealKey.SigningKey)
 	myrecipientPrivateKey := &privateKeySlice
 	extra25519.PrivateKeyToCurve25519(sealPrivateKey, myrecipientPrivateKey)
 

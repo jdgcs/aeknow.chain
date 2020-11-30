@@ -11,10 +11,14 @@
         </li>
                
         <!--  <li class="active treeview menu-open"> -->
+        <li><a href="/views/haeme.html"><i class="glyphicon glyphicon-pencil"></i> <span>Haeme</span></a></li>
+        <li><a href="/files"><i class="fa fa-folder-open"></i> <span>Knowledge Base</span></a></li> 
+        
+        
 		 <li class="active treeview menu-open">
           <a href="/wallet">
             <i class="glyphicon glyphicon-briefcase"></i>
-            <span>Assets</span>
+            <span>My Assets</span>
             <span class="pull-right-container">
               <i class="fa fa-angle-left pull-right"></i>
             </span>
@@ -31,10 +35,9 @@
         </li>
         <li><a href="/chat?topic=ak_fCCw1JEkvXdztZxk8FRGNAkvmArhVeow89e64yX4AxbCPrVh5"><i class="fa fa-users"></i> <span>Chaet</span></a></li>
         
-        
-        <li><a href="/views/haeme.html"><i class="glyphicon glyphicon-pencil"></i> <span>Haeme</span></a></li>
+       
                   
-         <li><a href="/files"><i class="fa fa-folder-open"></i> <span>Files</span></a></li>       
+              
          <li>
           <a href="#" >
             <i class="glyphicon glyphicon-envelope"></i> <span>Messages </span>  

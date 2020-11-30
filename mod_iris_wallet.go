@@ -4,6 +4,7 @@ import (
 	//"encoding/json"
 	"bufio"
 	crypto_rand "crypto/rand"
+	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
@@ -16,6 +17,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 
 	//"time"
 
@@ -30,6 +34,8 @@ import (
 	"github.com/jdgcs/ed25519/extra25519"
 	"github.com/tyler-smith/go-bip39"
 	"golang.org/x/crypto/nacl/box"
+
+	shell "github.com/ipfs/go-ipfs-api"
 )
 
 var (
@@ -131,12 +137,36 @@ func iImportFromMnemonic(ctx iris.Context) {
 			fmt.Println(err)
 		}
 		fmt.Println(mykey.Address)
-		accountFileName := "./data/accounts/" + mykey.Address
-		if !FileExist(accountFileName) {
-			account.StoreToKeyStoreFile(mykey, password, accountFileName)
+
+		jks, err := account.KeystoreSeal(mykey, password)
+		alias := "Import"
+		//check the database
+		db, err := sql.Open("sqlite3", "./data/accounts/accounts.db")
+		checkError(err)
+
+		sql_account := "SELECT account,alias FROM accounts WHERE account='" + mykey.Address + "'"
+		rows, err := db.Query(sql_account)
+		checkError(err)
+
+		needStore := true
+		for rows.Next() {
+			needStore = false
+		}
+
+		mnemonic = SealMSGTo(mykey.Address, mnemonic, mykey) //Crypt mnemonic
+		//Store the account and initial the enviroment:config,pubdata,privatedata and logs
+		if needStore {
+			sql_insert := "INSERT INTO accounts(account,alias,keystore,mnemonic) VALUES ('" + mykey.Address + "','" + alias + "','" + string(jks) + "','" + mnemonic + "')"
+			db.Exec(sql_insert)
+			db.Close()
+			//Create database for each new account
+			InitDatabase(mykey.Address, alias)
 		} else {
 			ctx.HTML("<h1>Account Exist</h1>")
 		}
+
+		db.Close()
+
 		ctx.Redirect("/")
 	} else {
 		ctx.HTML("<h1>Passwords must be the same.</h1>")
@@ -146,6 +176,62 @@ func iImportFromMnemonic(ctx iris.Context) {
 func iDoRegister(ctx iris.Context) {
 	password := ctx.FormValue("password")
 	password_repeat := ctx.FormValue("password_repeat")
+	alias := ctx.FormValue("alias")
+	if (password == password_repeat) && len(password) > 1 {
+
+		//Gnerate new account's mnemonic
+		entropy, _ := bip39.NewEntropy(256)
+		mnemonic, _ := bip39.NewMnemonic(entropy)
+		seed, err := account.ParseMnemonic(mnemonic)
+
+		// Derive the subaccount m/44'/457'/3'/0'/1'
+		key, err := account.DerivePathFromSeed(seed, 0, 0)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		// Deriving the aeternity Account from a BIP32 Key is a destructive process
+		mykey, err := account.BIP32KeyToAeKey(key)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		jks, err := account.KeystoreSeal(mykey, password)
+		//fmt.Println(string(jks), alias)
+
+		//check the database
+		db, err := sql.Open("sqlite3", "./data/accounts/accounts.db")
+		checkError(err)
+
+		sql_account := "SELECT account,alias FROM accounts WHERE account='" + mykey.Address + "'"
+		rows, err := db.Query(sql_account)
+		checkError(err)
+
+		needStore := true
+		for rows.Next() {
+			needStore = false
+		}
+
+		mnemonic = SealMSGTo(mykey.Address, mnemonic, mykey) //Crypt mnemonic
+		//Store the account and initial the enviroment:config,pubdata,privatedata and logs
+		if needStore {
+			sql_insert := "INSERT INTO accounts(account,alias,keystore,mnemonic) VALUES ('" + mykey.Address + "','" + alias + "','" + string(jks) + "','" + mnemonic + "')"
+			db.Exec(sql_insert)
+			db.Close()
+			//Create database for each new account
+			InitDatabase(mykey.Address, alias)
+		}
+
+		ctx.Redirect("/")
+	} else {
+		ctx.HTML("<h1>Passwords must be the same.</h1>")
+	}
+}
+
+func iDoRegister_old(ctx iris.Context) {
+	password := ctx.FormValue("password")
+	password_repeat := ctx.FormValue("password_repeat")
+	//alias := ctx.FormValue("alias")
 	if (password == password_repeat) && len(password) > 1 {
 		acc, _ := account.New()
 		accountFileName := "tmpAccount"
@@ -180,7 +266,7 @@ func iLogOut(ctx iris.Context) {
 	//stop current daemon
 	//<-myreq.Context.Done()
 	//time.Sleep(1 * time.Second)
-	go killIPFS()
+	//go killIPFS()
 }
 
 func killIPFS() {
@@ -210,7 +296,87 @@ func killIPFS() {
 		fmt.Printf("Execute Shell:%s finished with output:\n%s", c, string(output))
 	}
 }
+
 func iHomePage(ctx iris.Context) {
+	MyAENS = ""
+	needReg := true
+	AccountsLists := ""
+	go bootIPFS()
+
+	//Check if there is a logined account
+	if len(globalAccount.Address) > 6 {
+		if !checkLogin(ctx) {
+			return
+		}
+
+		needReg = false
+
+		myPage := PageWallet{PageId: 23, Account: globalAccount.Address, PageTitle: MyIPFSConfig.Identity.PeerID}
+		ctx.ViewData("", myPage)
+		ctx.View("dashboard.php")
+
+		err := qrcode.WriteFile(globalAccount.Address, qrcode.Medium, 256, "./views/qr_ak.png")
+		checkError(err)
+
+	} else {
+		//list accounts
+		dbpath := "./data/accounts/accounts.db"
+		if !FileExist(dbpath) {
+			db, _ := sql.Open("sqlite3", dbpath)
+			sql_account := `
+CREATE TABLE if not exists "accounts"(
+"aid" INTEGER PRIMARY KEY AUTOINCREMENT,
+"account" TEXT NULL,
+"keystore" TEXT NULL,
+"alias" TEXT NULL,
+"mnemonic" TEXT NULL,
+"lastlogin" INTEGER NULL,
+"remark" TEXT NULL
+);
+`
+			db.Exec(sql_account)
+			db.Close()
+		}
+		db, err := sql.Open("sqlite3", dbpath)
+		checkError(err)
+
+		sql_account := "SELECT account,alias FROM accounts ORDER by lastlogin desc"
+		rows, err := db.Query(sql_account)
+		checkError(err)
+
+		for rows.Next() {
+			var account string
+			var alias string
+			err = rows.Scan(&account, &alias)
+			AccountsLists = AccountsLists + "<option value=" + account + ">" + alias + "(" + account + ")</option>\n"
+			needReg = false
+		}
+
+		db.Close()
+
+	}
+
+	if needReg {
+		var myPage PageReg
+		myPage.PageTitle = "Registering Page"
+		myPage.SubTitle = "Decentralized knowledge system without barrier."
+		myPage.Register = "Register"
+
+		//myPage.Lang = getPageString(getPageLang(r))
+
+		//myPage = getPageString(getPageLang(r), "register")
+		ctx.ViewData("", myPage)
+		ctx.View("register.php")
+	} else {
+		var myoption template.HTML
+		myoption = template.HTML(AccountsLists)
+		myPage := PageLogin{Options: myoption}
+		ctx.ViewData("", myPage)
+		ctx.View("login.php")
+	}
+
+}
+func iHomePage_old(ctx iris.Context) {
 
 	needReg := true
 	ak := ""
@@ -218,7 +384,7 @@ func iHomePage(ctx iris.Context) {
 	//myLang := getPageString(getPageLang(ctx.Request()))
 	//language := ctx.GetLocale().Language()
 	//fmt.Println(myLang.Register)
-
+	go bootIPFS()
 	merr := filepath.Walk("data/accounts/", func(path string, info os.FileInfo, err error) error {
 		if strings.Contains(path, "ak_") {
 
@@ -277,8 +443,64 @@ func iHomePage(ctx iris.Context) {
 		ctx.View("register.php")
 	}
 }
-
 func iCheckLogin(ctx iris.Context) {
+	accountname := ctx.FormValue("accountname")
+	password := ctx.FormValue("password")
+	db, err := sql.Open("sqlite3", "./data/accounts/accounts.db")
+	checkError(err)
+
+	sql_account := "SELECT keystore,alias FROM accounts WHERE account='" + accountname + "'"
+	rows, err := db.Query(sql_account)
+	checkError(err)
+
+	var keystore string
+	var alias string
+	for rows.Next() {
+		err = rows.Scan(&keystore, &alias)
+		checkError(err)
+	}
+
+	//myAccount, err := account.LoadFromKeyStoreFile("data/accounts/"+accountname, password)
+	myAccount, err := account.KeystoreOpen([]byte(keystore), password)
+	MyUsername = alias
+
+	if err != nil {
+		fmt.Println("Could not create myAccount's Account:", err)
+		myPage := PageWallet{PageTitle: "Password error:Could not Read Account"}
+		ctx.ViewData("", myPage)
+		ctx.View("error.php")
+
+	} else { //init the settings
+		globalAccount = *myAccount //作为呈现账号
+		signAccount = myAccount    //作为签名账号
+
+		// Set user as authenticated
+		session := sess.Start(ctx)
+		session.Set("authenticated", true)
+		GetConfigs(myAccount.Address)
+		//NodeConfig = getConfigString() //读取节点设置
+		//MyIPFSConfig = getIPFSConfig() //读取IPFS节点配置
+		//MySiteConfig = getSiteConfig() //读取网站设置
+		lastIPFS = ""
+
+		//go bootIPFS()
+		NodeOnline = true
+		loginedFile()
+		go bootIPFS()
+		go ConnetDefaultNodes()
+		lastIPFS = getLastIPFS()
+		lastlogin := strconv.FormatInt(time.Now().Unix(), 10)
+		sql_update := "UPDATE accounts SET lastlogin=" + lastlogin + " WHERE account='" + myAccount.Address + "'"
+		//fmt.Println(sql_update)
+		db.Exec(sql_update)
+
+	}
+	db.Close()
+
+	ctx.Redirect("/")
+
+}
+func iCheckLogin_old(ctx iris.Context) {
 	accountname := ctx.FormValue("accountname")
 	password := ctx.FormValue("password")
 	myAccount, err := account.LoadFromKeyStoreFile("data/accounts/"+accountname, password)
@@ -305,10 +527,11 @@ func iCheckLogin(ctx iris.Context) {
 		MySiteConfig = getSiteConfig() //读取网站设置
 		lastIPFS = ""
 		configHugo() //登录成功初始化
-		go bootIPFS()
+		//go bootIPFS()
 		NodeOnline = true
 		loginedFile()
 		go ConnetDefaultNodes()
+		lastIPFS = getLastIPFS()
 		// Authentication goes here
 		// ...
 
@@ -358,23 +581,40 @@ func loginoutFile() {
 }
 
 func bootIPFS() { //boot IPFS independently
-	if ostype == "windows" {
-		fileExec := ".\\bin\\ipfs.exe"
-		c := "set IPFS_PATH=data\\site\\" + globalAccount.Address + "\\repo\\&& " + fileExec + " daemon --enable-pubsub-experiment"
-		fmt.Println(c)
-		cmd := exec.Command("cmd", "/c", c)
-		out, _ := cmd.Output()
-		fmt.Println(string(out))
+	NeedBoot := true
 
+	sh := shell.NewShell("127.0.0.1:5001")
+	cid, err := sh.Add(strings.NewReader("Hello AEK!"))
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %s", err)
+		//os.Exit(1)
 	} else {
-		fileExec := "./bin/ipfs"
+		fmt.Println("IPFS has booted, abort=>" + cid)
+		NeedBoot = false
+	}
 
-		c := "export IPFS_PATH=./data/site/" + globalAccount.Address + "/repo/&& " + fileExec + " daemon --enable-pubsub-experiment"
-		cmd := exec.Command("sh", "-c", c)
-		fmt.Println(c)
-		out, _ := cmd.Output()
-		fmt.Println(string(out))
+	if NeedBoot {
+		if ostype == "windows" {
+			fileExec := ".\\bin\\ipfs.exe"
+			//c := "set IPFS_PATH=data\\site\\" + globalAccount.Address + "\\repo\\&& " + fileExec + " daemon --enable-pubsub-experiment"
+			c := "set IPFS_PATH=data\\repo\\&& " + fileExec + " daemon --enable-pubsub-experiment"
+			fmt.Println(c)
+			cmd := exec.Command("cmd", "/c", c)
+			out, _ := cmd.Output()
+			fmt.Println(string(out))
 
+		} else {
+			fileExec := "./bin/ipfs"
+
+			//c := "export IPFS_PATH=./data/site/" + globalAccount.Address + "/repo/&& " + fileExec + " daemon --enable-pubsub-experiment"
+			c := "export IPFS_PATH=./data/repo/&& " + fileExec + " daemon --enable-pubsub-experiment"
+			cmd := exec.Command("sh", "-c", c)
+			fmt.Println(c)
+			out, _ := cmd.Output()
+			fmt.Println(string(out))
+
+		}
 	}
 }
 
@@ -708,6 +948,25 @@ func readFileStr(fileName string) string {
 }
 
 func getLastIPFS() string {
+	dbpath := "./data/accounts/" + globalAccount.Address + "/config.db"
+	db, err := sql.Open("sqlite3", dbpath)
+	checkError(err)
+
+	value := ""
+	if FileExist(dbpath) {
+		sql_query := "SELECT value FROM config WHERE item='LastIPFS'"
+		rows, err := db.Query(sql_query)
+		checkError(err)
+
+		for rows.Next() {
+			err = rows.Scan(&value)
+		}
+	}
+
+	return value
+}
+
+func getLastIPFS_old() string {
 	fileName := ""
 	if ostype == "windows" {
 		fileName = "data\\site\\" + globalAccount.Address + "\\lastIPFS"
@@ -773,4 +1032,245 @@ func checkIPFSRepo(RepoName string) {
 		}
 	}
 
+}
+
+func InitDatabase(pubkey, name string) {
+	dbpathDir := "./data/accounts/" + pubkey
+
+	if !FileExist(dbpathDir) {
+		err := os.Mkdir(dbpathDir, os.ModePerm)
+		checkError(err)
+	}
+
+	dbpath := "file:./data/accounts/" + pubkey + "/public.db?auto_vacuum=1"
+	db, _ := sql.Open("sqlite3", dbpath)
+	//Create main data table for articles
+	sql_main := `
+CREATE TABLE if not exists "aek"(
+"aid" INTEGER PRIMARY KEY AUTOINCREMENT,
+"title" TEXT NULL,
+"author" TEXT NULL,
+"authorname" TEXT NULL,
+"hash" TEXT NULL,
+"abstract" TEXT NULL,
+"keywords" TEXT NULL,
+"filetype" TEXT NULL,
+"filesize" INTEGER NULL,
+"pubtime" INTEGER NULL,
+"lastmodtime" INTEGER NULL,
+"remark" TEXT NULL
+);
+`
+	db.Exec(sql_main)
+	//Create author's info table
+	sql_site := `
+CREATE TABLE if not exists "author"(
+"aid" INTEGER PRIMARY KEY AUTOINCREMENT,
+"pubkey" TEXT NULL,
+"name" TEXT NULL,
+"bio" TEXT NULL,
+"aens" TEXT NULL,
+"ipns" TEXT NULL,
+"sitetitle" TEXT NULL,
+"sitesubtitle" TEXT NULL,
+"sitedescription" TEXT NULL,
+"sitetheme" TEXT NULL,
+"pubtime" INTEGER NULL,
+"lasttime" INTEGER NULL,
+"remark" TEXT NULL
+);`
+
+	db.Exec(sql_site)
+	sql_init := `INSERT INTO author(pubkey,name) VALUES('` + pubkey + `','` + name + `');`
+	db.Exec(sql_init)
+	db.Close()
+
+	//create private database
+	dbpath = "file:./data/accounts/" + pubkey + "/private.db?auto_vacuum=1"
+	db, _ = sql.Open("sqlite3", dbpath)
+	sql_main = `
+CREATE TABLE if not exists "aek"(
+"aid" INTEGER PRIMARY KEY AUTOINCREMENT,
+"title" TEXT NULL,
+"author" TEXT NULL,
+"authorname" TEXT NULL,
+"hash" TEXT NULL,
+"abstract" TEXT NULL,
+"keywords" TEXT NULL,
+"filetype" TEXT NULL,
+"filesize" INTEGER NULL,
+"pubtime" INTEGER NULL,
+"lastmodtime" INTEGER NULL,
+"remark" TEXT NULL
+);
+`
+	db.Exec(sql_main)
+	//Create author's info table
+	sql_site = `
+CREATE TABLE if not exists "author"(
+"aid" INTEGER PRIMARY KEY AUTOINCREMENT,
+"pubkey" TEXT NULL,
+"name" TEXT NULL,
+"bio" TEXT NULL,
+"aens" TEXT NULL,
+"ipns" TEXT NULL,
+"sitetitle" TEXT NULL,
+"sitesubtitle" TEXT NULL,
+"sitedescription" TEXT NULL,
+"sitetheme" TEXT NULL,
+"pubtime" INTEGER NULL,
+"lasttime" INTEGER NULL,
+"remark" TEXT NULL
+);`
+
+	db.Exec(sql_site)
+	sql_init = `INSERT INTO author(pubkey,name) VALUES('` + pubkey + `','` + name + `');`
+	db.Exec(sql_init)
+	db.Close()
+
+	//create config database
+	dbpath = "file:./data/accounts/" + pubkey + "/config.db?auto_vacuum=1"
+	db, _ = sql.Open("sqlite3", dbpath)
+
+	sql_table := `
+CREATE TABLE if not exists "config"(
+"item" text NULL,
+"value" TEXT NULL,
+"remark" TEXT NULL
+);
+`
+	db.Exec(sql_table)
+	//Default settings
+	sql_init = `INSERT INTO config(item,value) VALUES('PublicNode','http://111.231.110.42:3013');`
+	db.Exec(sql_init)
+
+	sql_init = `INSERT INTO config(item,value) VALUES('APINode','https://www.aeknow.org');`
+	db.Exec(sql_init)
+
+	sql_init = `INSERT INTO config(item,value) VALUES('IPFSNode','http://127.0.0.1:8080');`
+	db.Exec(sql_init)
+
+	sql_init = `INSERT INTO config(item,value) VALUES('IPFSAPI','http://127.0.0.1:5001');`
+	db.Exec(sql_init)
+
+	sql_init = `INSERT INTO config(item,value) VALUES('LocalWeb','http://127.0.0.1:8888');`
+	db.Exec(sql_init)
+	db.Close()
+
+	//create logs database
+	dbpath = "file:./data/accounts/" + pubkey + "/logs.db?auto_vacuum=1"
+	db, _ = sql.Open("sqlite3", dbpath)
+	//Create log data table for articles
+	sql_main = `
+CREATE TABLE if not exists "logs"(
+"aid" INTEGER PRIMARY KEY AUTOINCREMENT,
+"title" TEXT NULL,
+"author" TEXT NULL,
+"authorname" TEXT NULL,
+"hash" TEXT NULL,
+"abstract" TEXT NULL,
+"keywords" TEXT NULL,
+"filetype" TEXT NULL,
+"filesize" INTEGER NULL,
+"pubtime" INTEGER NULL,
+"lastmodtime" INTEGER NULL,
+"remark" TEXT NULL
+);
+`
+	db.Exec(sql_main)
+
+	//create indexs for search
+	sql_index := `create index bodyindex on aek(body);`
+	db.Exec(sql_index)
+
+	sql_index = `create index titleindex on aek(title);`
+	db.Exec(sql_index)
+
+	sql_index = `create index keywordsindex on aek(keywords);`
+	db.Exec(sql_index)
+
+	sql_index = `create index authorindex on aek(author);`
+	db.Exec(sql_index)
+
+	db.Close()
+
+}
+func UpdateConfigs(pubkey, item, value string) {
+	//update or insert configs
+	dbpath := "./data/accounts/" + pubkey + "/config.db"
+	db, err := sql.Open("sqlite3", dbpath)
+	checkError(err)
+	sql_check := "SELECT value FROM config WHERE item='" + item + "'"
+	rows, err := db.Query(sql_check)
+	checkError(err)
+
+	NeedInsert := true
+	for rows.Next() {
+		NeedInsert = false
+	}
+
+	if NeedInsert {
+		sql_insert := "INSERT INTO config(item,value) VALUES('" + item + "','" + value + "')"
+		db.Exec(sql_insert)
+	} else {
+		sql_update := "UPDATE config set value='" + value + "' WHERE item='" + item + "'"
+		db.Exec(sql_update)
+	}
+
+	db.Close()
+}
+func GetConfigs(pubkey string) {
+	dbpath := "./data/accounts/" + pubkey + "/config.db"
+	db, _ := sql.Open("sqlite3", dbpath)
+	sql_query := "SELECT item, value FROM config"
+	rows, err := db.Query(sql_query)
+	checkError(err)
+
+	MySiteConfig.Author = pubkey
+	MySiteConfig.AuthorDescription = pubkey
+	MySiteConfig.Description = "This is the default new site, ready to build my knowledge base!"
+	MySiteConfig.Title = "New Start"
+	MySiteConfig.Subtitle = "A new step to the knowledge ocean."
+
+	for rows.Next() {
+		var item string
+		var value string
+		err = rows.Scan(&item, &value)
+		switch item {
+		//site config
+		case "Author":
+			MySiteConfig.Author = value
+		case "Title":
+			MySiteConfig.Title = value
+		case "AuthorDescription":
+			MySiteConfig.AuthorDescription = value
+		case "Description":
+			MySiteConfig.Description = value
+		case "Subtitle":
+			MySiteConfig.Subtitle = value
+		//network config
+		case "PublicNode":
+			NodeConfig.PublicNode = value
+		case "APINode":
+			NodeConfig.APINode = value
+		case "IPFSNode":
+			NodeConfig.IPFSNode = value
+		case "IPFSAPI":
+			NodeConfig.IPFSAPI = value
+		case "LocalWeb":
+			NodeConfig.LocalWeb = value
+		case "MyAENS":
+			MyAENS = value
+		case "LastIPFS":
+			lastIPFS = value
+		default:
+			fmt.Println("No Such item: " + item)
+		}
+
+	}
+
+	db.Close()
+	//NodeConfig = getConfigString() //读取节点设置
+	MyIPFSConfig = getIPFSConfig() //读取IPFS节点配置
+	//MySiteConfig = getSiteConfig() //读取网站设置
 }

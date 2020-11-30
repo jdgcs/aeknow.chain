@@ -34,9 +34,9 @@
     <!-- Logo -->
     <a href="/" class="logo"  style="background:#f7296e">
       <!-- mini logo for sidebar mini 50x50 pixels -->
-      <span class="logo-mini"><b>a</b>K</span>
+      <span class="logo-mini"><b>AE</b>K</span>
       <!-- logo for regular state and mobile devices -->
-      <span class="logo-lg"><b>ae</b>Know</span>
+      <span class="logo-lg"><b>AE</b>Know</span>
     </a>
     <!-- Header Navbar: style can be found in header.less -->
     <nav class="navbar navbar-static-top"  style="background:#f7296e">
@@ -73,7 +73,7 @@
     <!-- Content Header (Page header) -->
     <section class="content-header">
       <h1>
-        Dashboard
+        Exploring the knowledge of mankind without barriers.
         <small>You, are the center of internet.</small>
       </h1>
       <ol class="breadcrumb">

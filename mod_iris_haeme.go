@@ -2,12 +2,17 @@ package main
 
 import (
 	"bufio"
+	//"bytes"
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html"
 	"html/template"
 	"io"
 	"io/ioutil"
+
+	//"unsafe"
 
 	//"net/url"
 	"os"
@@ -18,6 +23,9 @@ import (
 	"strings"
 	"time"
 
+	_ "github.com/mattn/go-sqlite3"
+
+	shell "github.com/ipfs/go-ipfs-api"
 	"github.com/kataras/iris/v12"
 )
 
@@ -29,6 +37,26 @@ type PageBlog struct {
 	PageTags        string
 	PageCategories  string
 	EditPath        string
+	PreLink         template.HTML
+	NextLink        template.HTML
+	TagsLink        template.HTML
+	PubTime         string
+	AuthorLink      template.HTML
+}
+
+type PageList struct {
+	Account         string
+	PageContent     template.HTML
+	PageTitle       string
+	PageDescription string
+	PageTags        string
+	PageCategories  string
+	EditPath        string
+	PreLink         template.HTML
+	NextLink        template.HTML
+	TagsLink        template.HTML
+	PubTime         string
+	AuthorLink      template.HTML
 }
 
 type IPFSConfig struct {
@@ -60,6 +88,8 @@ type SiteConfig struct {
 var MyIPFSConfig IPFSConfig
 var MySiteConfig SiteConfig
 var lastIPFS string
+var MyUsername string
+var MyAENS string
 
 func getSiteConfig() SiteConfig {
 
@@ -86,9 +116,9 @@ func getSiteConfig() SiteConfig {
 func getIPFSConfig() IPFSConfig {
 	configFilePath := ""
 	if ostype == "windows" {
-		configFilePath = "data\\site\\" + globalAccount.Address + "\\repo\\config"
+		configFilePath = "data\\repo\\config"
 	} else {
-		configFilePath = "./data/site/" + globalAccount.Address + "/repo/config"
+		configFilePath = "./data/repo/config"
 	}
 	_, err := os.Stat(configFilePath)
 
@@ -180,6 +210,235 @@ func iBlog(ctx iris.Context) {
 	ctx.View("haeme_blog.php")
 }
 
+func iView(ctx iris.Context) {
+	//View the page content with 2 parameters.
+	if !checkLogin(ctx) {
+		//	return
+	}
+
+	hash := ctx.FormValue("hash")
+	pubkey := ctx.FormValue("pubkey")
+	tag := ctx.FormValue("tag")
+	viewtype := ctx.FormValue("viewtype")
+
+	dbpath := "./data/accounts/" + pubkey + "/public.db"
+	//fmt.Println(dbpath)
+
+	if hash != "" && pubkey != "" {
+		ViewContent(ctx, hash, pubkey, dbpath)
+	}
+
+	if tag != "" && pubkey != "" {
+		ViewTag(ctx, tag, pubkey, dbpath)
+	}
+	if viewtype == "author" && pubkey != "" {
+		ViewHome(ctx, pubkey, dbpath)
+	}
+
+}
+
+func ViewHome(ctx iris.Context, pubkey string, dbpath string) {
+	//View the Homepage of a user
+
+	if !FileExist(dbpath) {
+		ctx.HTML("<h1>No such sqlite db." + dbpath + "</h1>")
+		return
+	}
+	querystr := "SELECT name FROM author ORDER BY aid DESC LIMIT 1"
+	db, err := sql.Open("sqlite3", dbpath)
+	checkError(err)
+	rows, err := db.Query(querystr)
+	checkError(err)
+
+	//var pubkey string
+	//var bio string
+	//var ipns string
+	var name string
+	PageContent := ""
+
+	for rows.Next() {
+		err = rows.Scan(&name)
+		checkError(err)
+		PageContent = "PubKey: " + pubkey + ", Author: " + name
+
+	}
+
+	myPage := PageList{Account: globalAccount.Address, PageTitle: name, PageContent: template.HTML(PageContent)}
+
+	ctx.ViewData("", myPage)
+	ctx.View("haeme_index.php")
+	db.Close()
+
+	//TODO: 用户页面布局，按时间展示
+}
+
+func ViewTag(ctx iris.Context, tag string, pubkey string, dbpath string) {
+	//View the tag list
+
+	if !FileExist(dbpath) {
+		ctx.HTML("<h1>No such sqlite db." + dbpath + "</h1>")
+		return
+	}
+
+	db, err := sql.Open("sqlite3", dbpath)
+	checkError(err)
+
+	querystr := "SELECT title,author,keywords,aid,abstract,filetype,pubtime,hash FROM aek WHERE keywords LIKE '%" + tag + "%' OR title LIKE '%" + tag + "%' ORDER BY pubtime DESC"
+	fmt.Println(querystr)
+	rows, err := db.Query(querystr)
+	checkError(err)
+	var title string
+	var author string
+	var keywords string
+	var aid int
+	var abstract sql.NullString
+	var filetype sql.NullString
+	var pubtime string
+	var hash string
+
+	PageContent := ""
+
+	for rows.Next() {
+		err = rows.Scan(&title, &author, &keywords, &aid, &abstract, &filetype, &pubtime, &hash)
+		checkError(err)
+		PageContent = PageContent + "<li><a href=/view?pubkey=" + pubkey + "&hash=" + hash + ">" + title + "</a> - <div class=pubtime>" + pubtime + "</div></li>"
+		//fmt.Println(title + author + keywords + strconv.Itoa(aid) + abstract.String + filetype.String + pubtime)
+
+	}
+	db.Close()
+
+	title = "List of tag: " + tag
+	myPage := PageList{Account: globalAccount.Address, PageTitle: title, PageContent: template.HTML(PageContent)}
+
+	ctx.ViewData("", myPage)
+	ctx.View("haeme_pagelist.php")
+	fmt.Println("Haeme")
+}
+
+func ViewContent(ctx iris.Context, hash string, pubkey string, dbpath string) {
+	if hash == "" || pubkey == "" {
+		ctx.HTML("<h1>No such parameter.</h1> ")
+		return
+	}
+
+	if !FileExist(dbpath) {
+		ctx.HTML("<h1>No such sqlite db." + dbpath + "</h1>")
+		return
+	}
+
+	db, err := sql.Open("sqlite3", dbpath)
+	checkError(err)
+
+	querystr := "SELECT title,author,keywords,aid,abstract,filetype,pubtime,authorname FROM aek WHERE hash='" + hash + "'"
+	//fmt.Println(querystr)
+	rows, err := db.Query(querystr)
+
+	checkError(err)
+	var title string
+	var author string
+	var keywords string
+	var aid int
+	var abstract sql.NullString
+	var filetype sql.NullString
+	var pubtime string
+	var authorname string
+
+	for rows.Next() {
+		err = rows.Scan(&title, &author, &keywords, &aid, &abstract, &filetype, &pubtime, &authorname)
+		checkError(err)
+	}
+	db.Close()
+
+	myTime, err := strconv.ParseInt(pubtime, 10, 64)
+	tm := time.Unix(myTime, 0)
+	pubtime = tm.Format("2006-01-02 15:04:05") //2018-07-11 15:10:19
+
+	pubtime = strings.Replace(pubtime, "T", " ", -1)
+	pubtime = strings.Replace(pubtime, "Z", " ", -1)
+
+	PreLink := template.HTML(GetPreLink(aid, pubkey))
+	NextLink := template.HTML(GetNextLink(aid, pubkey))
+	TagsLink := template.HTML(GetTagLink(keywords, pubkey))
+	AuthorLink := template.HTML("<a href=/view?pubkey=" + pubkey + "&viewtype=author>" + authorname + "</a>")
+	sh := shell.NewShell(NodeConfig.IPFSAPI)
+	rc, err := sh.Cat("/ipfs/" + hash)
+	s, err := copyToString(rc)
+	checkError(err)
+	//fmt.Println(s)
+
+	myPage := PageBlog{AuthorLink: AuthorLink, PubTime: pubtime, TagsLink: TagsLink, PreLink: PreLink, NextLink: NextLink, Account: globalAccount.Address, PageTitle: title, PageContent: template.HTML(s), PageTags: keywords, EditPath: author}
+
+	ctx.ViewData("", myPage)
+	//if filetype.String == "markdown" {
+	ctx.View("haeme_page.php")
+	//}
+
+	if filetype.String == "html" {
+		ctx.View("haeme_page_html.php")
+	}
+	fmt.Println("Haeme")
+}
+
+func copyToString(r io.Reader) (res string, err error) {
+	var sb strings.Builder
+	if _, err = io.Copy(&sb, r); err == nil {
+		res = sb.String()
+	}
+	return
+}
+
+func GetTagLink(tags string, pubkey string) string {
+	//Generate tag links
+	TmpStr := strings.Split(tags, ",")
+	taglink := ""
+	for i := 0; i < len(TmpStr); i++ {
+		taglink = taglink + "<a href=/view?pubkey=" + pubkey + "&tag=" + TmpStr[i] + ">" + TmpStr[i] + "</a>,"
+	}
+
+	return taglink
+}
+
+func GetPreLink(aid int, pubkey string) string {
+	//Get the previous page and link
+	dbpath := "./data/accounts/" + pubkey + "/public.db"
+	db, err := sql.Open("sqlite3", dbpath)
+	checkError(err)
+	querystr := "SELECT title,hash FROM aek WHERE aid<" + strconv.Itoa(aid) + " ORDER BY aid desc LIMIT 1;"
+
+	rows, err := db.Query(querystr)
+	checkError(err)
+	title := ""
+	hash := ""
+
+	for rows.Next() {
+		err = rows.Scan(&title, &hash)
+		checkError(err)
+	}
+
+	db.Close()
+	return "<a href=/view?pubkey=" + pubkey + "&hash=" + hash + ">" + title + "</a>"
+}
+
+func GetNextLink(aid int, pubkey string) string {
+	//Get the next page and link
+	dbpath := "./data/accounts/" + pubkey + "/public.db"
+	db, err := sql.Open("sqlite3", dbpath)
+	checkError(err)
+	querystr := "SELECT title,hash FROM aek WHERE aid>" + strconv.Itoa(aid) + " ORDER BY aid asc LIMIT 1;"
+
+	rows, err := db.Query(querystr)
+	checkError(err)
+	title := ""
+	hash := ""
+
+	for rows.Next() {
+		err = rows.Scan(&title, &hash)
+		checkError(err)
+	}
+
+	db.Close()
+	return "<a href=/view?pubkey=" + pubkey + "&hash=" + hash + ">" + title + "</a>"
+}
 func iSaveBlog(ctx iris.Context) {
 
 	if !checkLogin(ctx) {
@@ -195,75 +454,43 @@ func iSaveBlog(ctx iris.Context) {
 	tags = strings.Replace(tags, "，", ",", -1)
 	content := ctx.FormValue("content")
 	description := ctx.FormValue("description")
-	editpath := ctx.FormValue("editpath")
-	draft := ctx.FormValue("draft")
+	//editpath := ctx.FormValue("editpath")
+	//draft := ctx.FormValue("draft")
 
-	t := time.Now()
-	timestamp := strconv.FormatInt(t.UTC().UnixNano(), 10)
+	body := html.EscapeString(content)
+	description = html.EscapeString(description)
 
-	targetFile := "./data/site/" + globalAccount.Address + "/content/post/" + timestamp + ".md"
-	if editpath != "" {
-		targetFile = "./data/site/" + globalAccount.Address + "/content/post/" + editpath
-	}
+	sh := shell.NewShell(NodeConfig.IPFSAPI)
 
-	//generate proper tags & categories
-	catsstr := "["
-	tmpArray := strings.Split(categories, ",")
-	var i int
-	for i = 0; i < len(tmpArray); i++ {
-		catsstr = catsstr + "\"" + tmpArray[i] + "\","
-	}
-	catsstr = catsstr + "]"
-	catsstr = strings.Replace(catsstr, ",]", "]", -1)
+	hash, err := sh.Add(strings.NewReader(body))
+	fmt.Println("posted hash: " + hash)
+	checkError(err)
 
-	tagstr := "["
-	tmpArray = strings.Split(tags, ",")
-	for i = 0; i < len(tmpArray); i++ {
-		tagstr = tagstr + "\"" + tmpArray[i] + "\","
-	}
-	tagstr = tagstr + "]"
-	tagstr = strings.Replace(tagstr, ",]", "]", -1)
+	dbpath := "./data/accounts/" + globalAccount.Address + "/public.db"
+	db, err := sql.Open("sqlite3", dbpath)
+	checkError(err)
+	//pubtime := t.UTC().Format(time.UnixDate)
+	//pubtime := time.Now().Unix()
+	filesize := strconv.Itoa(strings.Count(body, ""))
+	pubtime := strconv.FormatInt(time.Now().Unix(), 10)
+	sql_insert := "INSERT INTO aek(title,abstract,hash,keywords,author,pubtime,filetype,authorname,filesize) VALUES('" + title + "','" + description + "','" + hash + "','" + tags + "','" + globalAccount.Address + "'," + pubtime + ",'markdown','" + MyUsername + "'," + filesize + ")"
+	fmt.Println(sql_insert)
+	_, err = db.Exec(sql_insert)
 
-	header := `---
-title: "` + title + `"
-date: ` + t.UTC().Format(time.UnixDate) + `
-categories: ` + catsstr + `
-tags: ` + tagstr + `
-draft: ` + draft + `
-description: "` + description + `"
----`
-	//TODO:ADD proper fields to UI
-	/*
-	   ---
-	   # Common-Defined params
-	   title: "Example article title"
-	   date: "2017-08-21"
-	   description: "Example article description"
-	   categories:
-	     - "Category 1"
-	     - "Category 2"
-	   tags:
-	     - "Test"
-	     - "Another test"
-	   menu: main # Optional, add page to a menu. Options: main, side, footer
-
-	   # Theme-Defined params
-	   thumbnail: "img/placeholder.jpg" # Thumbnail image
-	   lead: "Example lead - highlighted near the title" # Lead text
-	   comments: false # Enable Disqus comments for specific page
-	   authorbox: true # Enable authorbox for specific page
-	   pager: true # Enable pager navigation (prev/next) for specific page
-	   toc: true # Enable Table of Contents for specific page
-	   mathjax: true # Enable MathJax for specific page
-	   ---*/
-	body := header + "\n" + content
-	fmt.Println(targetFile, body)
-
-	err := ioutil.WriteFile(targetFile, []byte(body), 0644)
+	checkError(err)
+	db.Close()
+	//sh := shell.NewShell(NodeConfig.IPFSAPI)
+	pubfile, err := os.Open(dbpath)
+	cid, err := sh.Add(pubfile)
+	lastIPFS = cid
+	UpdateConfigs(globalAccount.Address, "LastIPFS", cid) //upfate lastipfs
+	fmt.Println("Pub: " + cid)
+	//err := ioutil.WriteFile(targetFile, []byte(body), 0644)
 	if err != nil {
 		panic(err)
 	} else {
-		iBuildSite(ctx)
+		fmt.Println("Posted")
+		//iBuildSite(ctx)
 		//iBuildSite(ctx)
 	}
 	/*
@@ -621,7 +848,8 @@ func iGoAENS(ctx iris.Context) {
 
 	//Go home firstly
 	if gohome == "gohome" {
-		ctx.Redirect(NodeConfig.IPFSNode + "/ipns/" + MyIPFSConfig.Identity.PeerID)
+		//ctx.Redirect(NodeConfig.IPFSNode + "/ipns/" + MyIPFSConfig.Identity.PeerID)
+		ctx.Redirect(NodeConfig.IPFSNode + "/ipfs/" + lastIPFS)
 		return
 	}
 
@@ -683,15 +911,6 @@ func iGoAENS(ctx iris.Context) {
 	}
 	redirecturl := NodeConfig.IPFSNode
 	IsRedirect := false
-	if myPagedata.IPFSAddress != "" {
-		redirecturl = NodeConfig.IPFSNode + "/" + "ipfs/" + myPagedata.IPFSAddress
-		if refresh == "refresh" {
-			t := time.Now()
-			timestamp := strconv.FormatInt(t.UTC().UnixNano(), 10)
-			redirecturl = NodeConfig.IPFSNode + "/" + "ipfs/" + myPagedata.IPFSAddress + "/?" + timestamp
-		}
-		IsRedirect = true
-	}
 
 	if myPagedata.IPNSAddress != "" {
 		redirecturl = NodeConfig.IPFSNode + "/" + "ipns/" + myPagedata.IPNSAddress
@@ -699,6 +918,16 @@ func iGoAENS(ctx iris.Context) {
 			t := time.Now()
 			timestamp := strconv.FormatInt(t.UTC().UnixNano(), 10)
 			redirecturl = NodeConfig.IPFSNode + "/" + "ipns/" + myPagedata.IPNSAddress + "/?" + timestamp
+		}
+		IsRedirect = true
+	}
+
+	if myPagedata.IPFSAddress != "" {
+		redirecturl = NodeConfig.IPFSNode + "/" + "ipfs/" + myPagedata.IPFSAddress
+		if refresh == "refresh" {
+			t := time.Now()
+			timestamp := strconv.FormatInt(t.UTC().UnixNano(), 10)
+			redirecturl = NodeConfig.IPFSNode + "/" + "ipfs/" + myPagedata.IPFSAddress + "/?" + timestamp
 		}
 		IsRedirect = true
 	}
